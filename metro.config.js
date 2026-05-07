@@ -1,7 +1,8 @@
-//
-//  metro.config.js
-//  
-//
-//  Created by Sheikh Abrar Yaseen on 06/05/26.
-//
+const { getDefaultConfig } = require("expo/metro-config");
+const { withNativeWind } = require("nativewind/metro");
 
+const config = getDefaultConfig(__dirname);
+
+module.exports = withNativeWind(config, {
+  input: "./global.css",
+});

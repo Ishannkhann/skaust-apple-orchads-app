@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "skaust",
-    "slug": "skaust",
-    "entryPoint": "./node_modules/expo-router/entry"
+    "name": "Your App Name",
+    "slug": "your-app-name",
+    "scheme": "yourapp",
+    "plugins": ["expo-router"]
   }
 }
