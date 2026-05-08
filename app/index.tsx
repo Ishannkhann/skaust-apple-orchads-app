@@ -1,16 +1,23 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useRef,
+  useState,
+} from "react";
+
 import {
   View,
   Text,
- Image,
+  Image,
   FlatList,
   TouchableOpacity,
   useColorScheme,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
+import {
+  useRouter,
+  Redirect,
+} from "expo-router";
 
 const slides = [
   {
@@ -24,6 +31,7 @@ const slides = [
     title: "<APP NAME>",
     textBlock1:
       "Built to modernize agricultural workflows with smart digital tools and seamless farm management.",
+
     textBlock2:
       "Powered through the collaboration of SKUAST and HADP to support innovation-driven farming ecosystems.",
   },
@@ -31,8 +39,10 @@ const slides = [
     id: "3",
     appName: "<APP NAME>",
     title: "Grow Better Every Season",
+
     description:
       "Empowering farmers with technology-driven insights and smarter workflows.",
+
     image: require("../assets/skaust-logo.png"),
   },
 ];
@@ -40,45 +50,41 @@ const slides = [
 export default function Onboarding() {
   const router = useRouter();
 
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const colorScheme =
+    useColorScheme();
 
-  const flatListRef = useRef<FlatList>(null);
+  const isDark =
+    colorScheme === "dark";
+
+  const flatListRef =
+    useRef<FlatList>(null);
 
   const [currentIndex, setCurrentIndex] =
     useState<number>(0);
 
-  // SESSION RESTORE
-  useEffect(() => {
-    const checkSession = async () => {
-      const isLoggedIn =
-        await AsyncStorage.getItem(
-          "isLoggedIn"
-        );
+  // TEMP AUTO REDIRECT TO HOME
+  return <Redirect href="/home" />;
 
-      if (isLoggedIn === "true") {
-        router.replace("/home");
+  // TRACK CURRENT SLIDE
+  const onViewableItemsChanged =
+    useRef(
+      ({ viewableItems }: any) => {
+        if (viewableItems.length > 0) {
+          setCurrentIndex(
+            viewableItems[0].index
+          );
+        }
       }
-    };
-
-    checkSession();
-  }, []);
-
-  // TRACK SLIDE
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: any) => {
-      if (viewableItems.length > 0) {
-        setCurrentIndex(viewableItems[0].index);
-      }
-    }
-  ).current;
+    ).current;
 
   const viewConfigRef = useRef({
     viewAreaCoveragePercentThreshold: 50,
   });
 
   // DOT NAVIGATION
-  const goToSlide = (index: number) => {
+  const goToSlide = (
+    index: number
+  ) => {
     setCurrentIndex(index);
 
     flatListRef.current?.scrollToIndex({
@@ -87,12 +93,12 @@ export default function Onboarding() {
     });
   };
 
-  // GO LOGIN
+  // LOGIN
   const goToLogin = () => {
     router.push("/login");
   };
 
-  // SLIDES
+  // RENDER SLIDES
   const renderItem = ({
     item,
     index,
@@ -105,13 +111,11 @@ export default function Onboarding() {
 
     return (
       <View className="w-screen flex-1 px-8">
-
         {/* FIRST SCREEN */}
         {isFirst ? (
           <>
             {/* TEXT */}
             <View className="items-center mt-12">
-
               <Text
                 className={`text-4xl font-bold text-center ${
                   isDark
@@ -131,12 +135,10 @@ export default function Onboarding() {
               >
                 {item.description}
               </Text>
-
             </View>
 
             {/* LOGOS */}
             <View className="flex-1 items-center justify-center">
-
               <View className="w-44 h-44 items-center justify-center">
                 <Image
                   source={require("../assets/skaust-logo.png")}
@@ -154,16 +156,13 @@ export default function Onboarding() {
                   resizeMode="contain"
                 />
               </View>
-
             </View>
           </>
         ) : isSecond ? (
           /* SECOND SCREEN */
           <View className="flex-1">
-
             {/* APP NAME */}
             <View className="items-center mt-14">
-
               <Text
                 className={`text-4xl font-bold text-center ${
                   isDark
@@ -173,12 +172,10 @@ export default function Onboarding() {
               >
                 {item.title}
               </Text>
-
             </View>
 
             {/* TEXT BLOCKS */}
             <View className="mt-14 space-y-5">
-
               <View
                 className={`rounded-3xl p-5 border ${
                   isDark
@@ -214,12 +211,10 @@ export default function Onboarding() {
                   {item.textBlock2}
                 </Text>
               </View>
-
             </View>
 
-            {/* SIDE BY SIDE LOGOS */}
+            {/* LOGOS */}
             <View className="flex-1 flex-row items-center justify-center gap-6">
-
               <View className="w-36 h-36 items-center justify-center">
                 <Image
                   source={require("../assets/skaust-logo.png")}
@@ -235,17 +230,13 @@ export default function Onboarding() {
                   resizeMode="contain"
                 />
               </View>
-
             </View>
-
           </View>
         ) : (
           /* THIRD SCREEN */
           <View className="flex-1">
-
             {/* APP NAME */}
             <View className="items-center mt-14">
-
               <Text
                 className={`text-4xl font-bold text-center ${
                   isDark
@@ -255,12 +246,10 @@ export default function Onboarding() {
               >
                 {item.appName}
               </Text>
-
             </View>
 
             {/* CONTENT */}
             <View className="flex-1 items-center justify-center">
-
               <View className="w-56 h-56 items-center justify-center">
                 <Image
                   source={item.image}
@@ -269,7 +258,6 @@ export default function Onboarding() {
                 />
               </View>
 
-              {/* TITLE */}
               <Text
                 className={`text-2xl font-semibold text-center mt-6 ${
                   isDark
@@ -280,7 +268,6 @@ export default function Onboarding() {
                 {item.title}
               </Text>
 
-              {/* DESCRIPTION */}
               <Text
                 className={`text-center mt-5 text-base leading-7 px-3 ${
                   isDark
@@ -290,12 +277,9 @@ export default function Onboarding() {
               >
                 {item.description}
               </Text>
-
             </View>
-
           </View>
         )}
-
       </View>
     );
   };
@@ -308,7 +292,6 @@ export default function Onboarding() {
           : "bg-lime-50"
       }`}
     >
-
       {/* SLIDER */}
       <FlatList
         ref={flatListRef}
@@ -316,21 +299,26 @@ export default function Onboarding() {
         renderItem={renderItem}
         horizontal
         pagingEnabled
-        showsHorizontalScrollIndicator={false}
+        showsHorizontalScrollIndicator={
+          false
+        }
         keyExtractor={(item) => item.id}
         onViewableItemsChanged={
           onViewableItemsChanged
         }
-        viewabilityConfig={viewConfigRef.current}
+        viewabilityConfig={
+          viewConfigRef.current
+        }
       />
 
       {/* DOTS */}
       <View className="flex-row justify-center mb-7">
-
         {slides.map((_, index) => (
           <TouchableOpacity
             key={index}
-            onPress={() => goToSlide(index)}
+            onPress={() =>
+              goToSlide(index)
+            }
             activeOpacity={0.7}
           >
             <View
@@ -344,12 +332,10 @@ export default function Onboarding() {
             />
           </TouchableOpacity>
         ))}
-
       </View>
 
       {/* LOGIN BUTTON */}
       <View className="px-6 pb-10">
-
         <TouchableOpacity
           onPress={goToLogin}
           activeOpacity={0.85}
@@ -359,9 +345,7 @@ export default function Onboarding() {
             Login with Mobile OTP
           </Text>
         </TouchableOpacity>
-
       </View>
-
     </SafeAreaView>
   );
 }
