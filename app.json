@@ -2,12 +2,26 @@
   "expo": {
     "name": "Your App Name",
     "slug": "your-app-name",
-    "scheme": "yourapp",
+
+    "scheme": "orchardapp",
+
     "plugins": [
       "expo-router",
       "expo-font",
       "expo-image",
-      "expo-web-browser"
-    ]
+      "expo-web-browser",
+      "expo-image-picker"
+    ],
+
+    "ios": {
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "We need access to upload orchard images",
+        "NSCameraUsageDescription": "We need camera access for orchard photos"
+      }
+    },
+
+    "android": {
+      "permissions": []
+    }
   }
 }

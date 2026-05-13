@@ -9,15 +9,18 @@ import {
   Image,
   FlatList,
   TouchableOpacity,
-  useColorScheme,
+  Dimensions,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   useRouter,
-  Redirect,
 } from "expo-router";
+
+const { width } = Dimensions.get("window");
+
+const SLIDE_WIDTH = width * 0.88;
 
 const slides = [
   {
@@ -50,22 +53,12 @@ const slides = [
 export default function Onboarding() {
   const router = useRouter();
 
-  const colorScheme =
-    useColorScheme();
-
-  const isDark =
-    colorScheme === "dark";
-
   const flatListRef =
     useRef<FlatList>(null);
 
   const [currentIndex, setCurrentIndex] =
     useState<number>(0);
 
-  // TEMP AUTO REDIRECT TO HOME
-  return <Redirect href="/home" />;
-
-  // TRACK CURRENT SLIDE
   const onViewableItemsChanged =
     useRef(
       ({ viewableItems }: any) => {
@@ -81,7 +74,6 @@ export default function Onboarding() {
     viewAreaCoveragePercentThreshold: 50,
   });
 
-  // DOT NAVIGATION
   const goToSlide = (
     index: number
   ) => {
@@ -93,12 +85,10 @@ export default function Onboarding() {
     });
   };
 
-  // LOGIN
-  const goToLogin = () => {
-    router.push("/login");
+  const goToDashboard = () => {
+    router.replace("/home");
   };
 
-  // RENDER SLIDES
   const renderItem = ({
     item,
     index,
@@ -109,199 +99,146 @@ export default function Onboarding() {
     const isFirst = index === 0;
     const isSecond = index === 1;
 
+    const isLast =
+      index === slides.length - 1;
+
     return (
-      <View className="w-screen flex-1 px-8">
-        {/* FIRST SCREEN */}
-        {isFirst ? (
-          <>
-            {/* TEXT */}
-            <View className="items-center mt-12">
-              <Text
-                className={`text-4xl font-bold text-center ${
-                  isDark
-                    ? "text-white"
-                    : "text-green-950"
-                }`}
-              >
-                {item.title}
-              </Text>
+      <View
+        style={{
+          width: isLast
+            ? width
+            : SLIDE_WIDTH,
+        }}
+        className="px-4"
+      >
+        <View className="flex-1">
 
-              <Text
-                className={`text-center mt-5 text-base leading-7 px-2 ${
-                  isDark
-                    ? "text-gray-400"
-                    : "text-green-800"
-                }`}
-              >
-                {item.description}
-              </Text>
-            </View>
+          {/* FIRST */}
+          {isFirst ? (
+            <>
+              <View className="items-center mt-14">
+                <Text className="text-4xl font-bold text-center text-green-950">
+                  {item.title}
+                </Text>
 
-            {/* LOGOS */}
-            <View className="flex-1 items-center justify-center">
-              <View className="w-44 h-44 items-center justify-center">
-                <Image
-                  source={require("../assets/skaust-logo.png")}
-                  className="w-32 h-32"
-                  resizeMode="contain"
-                />
-              </View>
-
-              <View className="h-8" />
-
-              <View className="w-44 h-44 items-center justify-center">
-                <Image
-                  source={require("../assets/hadp-logo.png")}
-                  className="w-32 h-32"
-                  resizeMode="contain"
-                />
-              </View>
-            </View>
-          </>
-        ) : isSecond ? (
-          /* SECOND SCREEN */
-          <View className="flex-1">
-            {/* APP NAME */}
-            <View className="items-center mt-14">
-              <Text
-                className={`text-4xl font-bold text-center ${
-                  isDark
-                    ? "text-white"
-                    : "text-green-950"
-                }`}
-              >
-                {item.title}
-              </Text>
-            </View>
-
-            {/* TEXT BLOCKS */}
-            <View className="mt-14 space-y-5">
-              <View
-                className={`rounded-3xl p-5 border ${
-                  isDark
-                    ? "bg-slate-800 border-slate-700"
-                    : "bg-white border-green-100"
-                }`}
-              >
-                <Text
-                  className={`text-base leading-7 text-center ${
-                    isDark
-                      ? "text-gray-300"
-                      : "text-green-800"
-                  }`}
-                >
-                  {item.textBlock1}
+                <Text className="text-center mt-5 text-base leading-7 px-2 text-green-700">
+                  {item.description}
                 </Text>
               </View>
 
-              <View
-                className={`rounded-3xl p-5 border mt-5 ${
-                  isDark
-                    ? "bg-slate-800 border-slate-700"
-                    : "bg-white border-green-100"
-                }`}
-              >
-                <Text
-                  className={`text-base leading-7 text-center ${
-                    isDark
-                      ? "text-gray-300"
-                      : "text-green-800"
-                  }`}
-                >
-                  {item.textBlock2}
+              <View className="flex-1 items-center justify-center">
+
+                <View className="w-44 h-44 items-center justify-center">
+                  <Image
+                    source={require("../assets/skaust-logo.png")}
+                    className="w-32 h-32"
+                    resizeMode="contain"
+                  />
+                </View>
+
+                <View className="h-8" />
+
+                <View className="w-44 h-44 items-center justify-center">
+                  <Image
+                    source={require("../assets/hadp-logo.png")}
+                    className="w-32 h-32"
+                    resizeMode="contain"
+                  />
+                </View>
+
+              </View>
+            </>
+          ) : isSecond ? (
+            <>
+              <View className="items-center mt-14">
+                <Text className="text-4xl font-bold text-center text-green-950">
+                  {item.title}
                 </Text>
               </View>
-            </View>
 
-            {/* LOGOS */}
-            <View className="flex-1 flex-row items-center justify-center gap-6">
-              <View className="w-36 h-36 items-center justify-center">
-                <Image
-                  source={require("../assets/skaust-logo.png")}
-                  className="w-24 h-24"
-                  resizeMode="contain"
-                />
+              <View className="mt-14">
+
+                <View className="rounded-3xl p-5 border bg-white border-green-100">
+                  <Text className="text-base leading-7 text-center text-green-700">
+                    {item.textBlock1}
+                  </Text>
+                </View>
+
+                <View className="rounded-3xl p-5 border mt-5 bg-white border-green-100">
+                  <Text className="text-base leading-7 text-center text-green-700">
+                    {item.textBlock2}
+                  </Text>
+                </View>
+
               </View>
 
-              <View className="w-36 h-36 items-center justify-center">
-                <Image
-                  source={require("../assets/hadp-logo.png")}
-                  className="w-24 h-24"
-                  resizeMode="contain"
-                />
-              </View>
-            </View>
-          </View>
-        ) : (
-          /* THIRD SCREEN */
-          <View className="flex-1">
-            {/* APP NAME */}
-            <View className="items-center mt-14">
-              <Text
-                className={`text-4xl font-bold text-center ${
-                  isDark
-                    ? "text-white"
-                    : "text-green-950"
-                }`}
-              >
-                {item.appName}
-              </Text>
-            </View>
+              <View className="flex-1 flex-row items-center justify-center gap-6">
 
-            {/* CONTENT */}
-            <View className="flex-1 items-center justify-center">
-              <View className="w-56 h-56 items-center justify-center">
-                <Image
-                  source={item.image}
-                  className="w-32 h-32"
-                  resizeMode="contain"
-                />
+                <View className="w-36 h-36 items-center justify-center">
+                  <Image
+                    source={require("../assets/skaust-logo.png")}
+                    className="w-24 h-24"
+                    resizeMode="contain"
+                  />
+                </View>
+
+                <View className="w-36 h-36 items-center justify-center">
+                  <Image
+                    source={require("../assets/hadp-logo.png")}
+                    className="w-24 h-24"
+                    resizeMode="contain"
+                  />
+                </View>
+
+              </View>
+            </>
+          ) : (
+            <>
+              <View className="items-center mt-14">
+                <Text className="text-4xl font-bold text-center text-green-950">
+                  {item.appName}
+                </Text>
               </View>
 
-              <Text
-                className={`text-2xl font-semibold text-center mt-6 ${
-                  isDark
-                    ? "text-white"
-                    : "text-green-900"
-                }`}
-              >
-                {item.title}
-              </Text>
+              <View className="flex-1 items-center justify-center">
 
-              <Text
-                className={`text-center mt-5 text-base leading-7 px-3 ${
-                  isDark
-                    ? "text-gray-400"
-                    : "text-green-800"
-                }`}
-              >
-                {item.description}
-              </Text>
-            </View>
-          </View>
-        )}
+                <View className="w-56 h-56 items-center justify-center">
+                  <Image
+                    source={item.image}
+                    className="w-32 h-32"
+                    resizeMode="contain"
+                  />
+                </View>
+
+                <Text className="text-2xl font-semibold text-center mt-6 text-green-950">
+                  {item.title}
+                </Text>
+
+                <Text className="text-center mt-5 text-base leading-7 px-3 text-green-700">
+                  {item.description}
+                </Text>
+
+              </View>
+            </>
+          )}
+
+        </View>
       </View>
     );
   };
 
   return (
-    <SafeAreaView
-      className={`flex-1 ${
-        isDark
-          ? "bg-slate-950"
-          : "bg-lime-50"
-      }`}
-    >
-      {/* SLIDER */}
+    <SafeAreaView className="flex-1 bg-lime-50">
+
       <FlatList
         ref={flatListRef}
         data={slides}
         renderItem={renderItem}
         horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={
-          false
-        }
+        pagingEnabled={false}
+        snapToInterval={SLIDE_WIDTH}
+        decelerationRate="fast"
+        showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
         onViewableItemsChanged={
           onViewableItemsChanged
@@ -309,6 +246,9 @@ export default function Onboarding() {
         viewabilityConfig={
           viewConfigRef.current
         }
+        contentContainerStyle={{
+          paddingRight: 50,
+        }}
       />
 
       {/* DOTS */}
@@ -325,27 +265,26 @@ export default function Onboarding() {
               className={`h-2 rounded-full mx-1 ${
                 index === currentIndex
                   ? "bg-green-700 w-5"
-                  : isDark
-                  ? "bg-slate-700 w-2"
-                  : "bg-green-200 w-2"
+                  : "bg-gray-300 w-2"
               }`}
             />
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* LOGIN BUTTON */}
+      {/* BUTTON */}
       <View className="px-6 pb-10">
         <TouchableOpacity
-          onPress={goToLogin}
+          onPress={goToDashboard}
           activeOpacity={0.85}
-          className="bg-green-700 py-4 rounded-2xl items-center shadow-sm"
+          className="bg-green-700 py-4 rounded-2xl items-center"
         >
           <Text className="text-white font-semibold text-base">
-            Login with Mobile OTP
+            Continue to Dashboard
           </Text>
         </TouchableOpacity>
       </View>
+
     </SafeAreaView>
   );
 }
