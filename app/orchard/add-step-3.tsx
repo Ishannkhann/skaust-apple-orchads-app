@@ -1,260 +1,127 @@
 import React, { useEffect, useState } from "react";
-
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   useColorScheme,
   ScrollView,
-  Image,
+  TextInput,
   Alert,
+  Image,
 } from "react-native";
 
 import * as ImagePicker from "expo-image-picker";
-
 import Modal from "react-native-modal";
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import { useRouter } from "expo-router";
-
 import { Ionicons } from "@expo/vector-icons";
-
-type FieldKey = "landType";
 
 export default function AddStep3() {
   const router = useRouter();
+  const isDark = useColorScheme() === "dark";
 
-  const isDark =
-    useColorScheme() === "dark";
+  const BG = isDark ? "bg-slate-950" : "bg-lime-50";
 
-  const BG =
-    isDark
-      ? "bg-slate-950"
-      : "bg-lime-50";
+  // ✅ Step 1 style input base (CONSISTENCY FIX)
+  const inputBase =
+    "rounded-2xl px-5 py-5 text-lg border";
 
-  const [area, setArea] =
-    useState("");
+  const inputStyle = isDark
+    ? `${inputBase} bg-slate-800 text-white border-slate-700`
+    : `${inputBase} bg-white text-green-950 border-green-100`;
 
-  const [landType, setLandType] =
-    useState("");
+  const [area, setArea] = useState("");
+  const [landType, setLandType] = useState("");
+  const [image, setImage] = useState("");
 
-  const [image, setImage] =
-    useState("");
+  const [modal, setModal] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
-  const [modal, setModal] =
-    useState(false);
-
-  const [options, setOptions] =
-    useState<string[]>([]);
-
-  const [activeField, setActiveField] =
-    useState<FieldKey | null>(
-      null
-    );
+  const options = [
+    "Irrigated",
+    "Krewa",
+    "Rainfed",
+    "Plains",
+    "Others",
+  ];
 
   useEffect(() => {
     (async () => {
-
-      const d =
-        await AsyncStorage.getItem(
-          "editingOrchard"
-        );
-
-      if (!d) return;
+      const d = await AsyncStorage.getItem("editingOrchard");
+      if (!d) {
+        setLoaded(true);
+        return;
+      }
 
       const o = JSON.parse(d);
 
-      setArea(o.area || "");
+      setArea(o.area ?? "");
+      setLandType(o.landType ?? "");
+      setImage(o.image ?? "");
 
-      setLandType(
-        o.landType || ""
-      );
-
-      setImage(o.image || "");
-
+      setLoaded(true);
     })();
   }, []);
 
-  const openDropdown = (
-    field: FieldKey,
-    list: string[]
-  ) => {
-    setActiveField(field);
-    setOptions(list);
-    setModal(true);
-  };
-
-  const selectOption = (
-    value: string
-  ) => {
-
-    if (
-      activeField === "landType"
-    ) {
-      setLandType(value);
-    }
-
-    setActiveField(null);
-
-    setModal(false);
-  };
-
   const pickImage = async () => {
-
     const { status } =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== "granted") {
-
-      Alert.alert(
-        "Permission required",
-        "Please allow gallery access to upload orchard images"
-      );
-
-      return;
+      return Alert.alert("Permission required");
     }
 
-    const res =
-      await ImagePicker.launchImageLibraryAsync({
-        mediaTypes:
-          ImagePicker.MediaTypeOptions.Images,
-
-        quality: 0.8,
-      });
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
 
     if (!res.canceled) {
-      setImage(
-        res.assets[0].uri
-      );
+      setImage(res.assets[0].uri);
     }
   };
 
   const save = async () => {
+    const editRaw = await AsyncStorage.getItem("editingOrchard");
 
-    if (
-      !area ||
-      isNaN(Number(area))
-    ) {
-      return Alert.alert(
-        "Error",
-        "Enter valid area"
-      );
-    }
-
-    if (!landType) {
-      return Alert.alert(
-        "Error",
-        "Select land type"
-      );
-    }
-
-    if (!image) {
-      return Alert.alert(
-        "Error",
-        "Upload orchard image"
-      );
-    }
-
-    const base =
-      await AsyncStorage.getItem(
-        "newOrchard"
-      );
-
-    const parsed = base
-      ? JSON.parse(base)
-      : {};
-
-    const final = {
-      ...parsed,
-      area,
-      landType,
-      image,
-
-      id:
-        parsed.id ||
-        Date.now().toString(),
-    };
-
-    const list =
-      await AsyncStorage.getItem(
-        "orchards"
-      );
-
-    const arr = list
-      ? JSON.parse(list)
-      : [];
-
-    const existingIndex =
-      arr.findIndex(
-        (o: any) =>
-          o.id === final.id
-      );
-
-    if (existingIndex >= 0) {
-
-      arr[existingIndex] = final;
-
+    if (editRaw) {
       await AsyncStorage.setItem(
-        "orchards",
-        JSON.stringify(arr)
+        "editingOrchard",
+        JSON.stringify({
+          ...JSON.parse(editRaw),
+          area,
+          landType,
+          image,
+        })
       );
-
     } else {
-
       await AsyncStorage.setItem(
-        "orchards",
-        JSON.stringify([
-          ...arr,
-          final,
-        ])
+        "newOrchard",
+        JSON.stringify({
+          area,
+          landType,
+          image,
+        })
       );
     }
-
-    await AsyncStorage.removeItem(
-      "newOrchard"
-    );
-
-    await AsyncStorage.removeItem(
-      "editingOrchard"
-    );
 
     router.replace("/home");
   };
 
   return (
-    <SafeAreaView
-      className={`flex-1 ${BG}`}
-    >
-      <ScrollView
-        className="px-6"
-        contentContainerStyle={{
-          paddingBottom: 60,
-        }}
-      >
+    <SafeAreaView className={`flex-1 ${BG}`}>
+      <ScrollView className="px-6">
 
-        {/* HEADER */}
-        <Text
-          className={`text-3xl font-bold mt-10 ${
-            isDark
-              ? "text-white"
-              : "text-green-950"
-          }`}
-        >
+        <Text className={`text-3xl font-bold mt-10 ${isDark ? "text-white" : "text-green-950"}`}>
           Finish Setup
         </Text>
 
-        <Text className="text-gray-500 mt-1">
-          Step 3 of 3
-        </Text>
+        <Text className="text-gray-500 mt-1">Step 3 of 3</Text>
 
         {/* AREA */}
         <View className="mt-8">
-
-          <Text className="mb-2 text-green-950 dark:text-white">
+          <Text className={`mb-2 text-base font-semibold ${isDark ? "text-white" : "text-green-950"}`}>
             Area in Canals
           </Text>
 
@@ -262,45 +129,27 @@ export default function AddStep3() {
             value={area}
             onChangeText={setArea}
             keyboardType="numeric"
-            className="px-5 py-4 rounded-2xl border bg-white dark:bg-slate-900"
+            placeholder="Enter area"
+            placeholderTextColor="#888"
+            className={inputStyle}
+            style={{ textAlignVertical: "center" }}
           />
-
         </View>
 
         {/* LAND TYPE */}
         <View className="mt-6">
-
-          <Text className="mb-2 text-green-950 dark:text-white">
+          <Text className={`mb-2 text-base font-semibold ${isDark ? "text-white" : "text-green-950"}`}>
             Land Type
           </Text>
 
           <TouchableOpacity
-            onPress={() =>
-              openDropdown(
-                "landType",
-                [
-                  "Irrigated",
-                  "Krewa",
-                  "Rainfed",
-                  "Plains",
-                  "Others",
-                ]
-              )
-            }
-            className="px-5 py-4 rounded-2xl border bg-white dark:bg-slate-900"
+            onPress={() => setModal(true)}
+            className={inputStyle}
           >
-            <Text
-              className={
-                landType
-                  ? "text-black dark:text-white"
-                  : "text-gray-400"
-              }
-            >
-              {landType ||
-                "Select Land Type"}
+            <Text className={landType ? inputStyle : "text-gray-400"}>
+              {loaded ? landType || "Select Land Type" : "Loading..."}
             </Text>
           </TouchableOpacity>
-
         </View>
 
         {/* IMAGE */}
@@ -308,26 +157,16 @@ export default function AddStep3() {
           onPress={pickImage}
           className="mt-8 h-64 rounded-3xl border bg-white dark:bg-slate-900 overflow-hidden items-center justify-center"
         >
-
           {image ? (
-            <Image
-              source={{ uri: image }}
-              className="w-full h-full"
-            />
+            <Image source={{ uri: image }} className="w-full h-full" />
           ) : (
             <>
-              <Ionicons
-                name="camera-outline"
-                size={42}
-                color="#6B7280"
-              />
-
+              <Ionicons name="camera-outline" size={42} color="#6B7280" />
               <Text className="text-gray-400 mt-3">
                 Tap to upload orchard image
               </Text>
             </>
           )}
-
         </TouchableOpacity>
 
         {/* SAVE */}
@@ -343,31 +182,23 @@ export default function AddStep3() {
       </ScrollView>
 
       {/* MODAL */}
-      <Modal
-        isVisible={modal}
-        onBackdropPress={() =>
-          setModal(false)
-        }
-      >
-
-        <View className="bg-white dark:bg-slate-900 rounded-2xl p-4">
-
+      <Modal isVisible={modal} onBackdropPress={() => setModal(false)}>
+        <View className={`${inputStyle} rounded-2xl p-4`}>
           {options.map((o) => (
             <TouchableOpacity
               key={o}
-              onPress={() =>
-                selectOption(o)
-              }
+              onPress={() => {
+                setLandType(o);
+                setModal(false);
+              }}
               className="py-4"
             >
-              <Text className="text-green-950 dark:text-white">
+              <Text className={isDark ? "text-white" : "text-green-950"}>
                 {o}
               </Text>
             </TouchableOpacity>
           ))}
-
         </View>
-
       </Modal>
     </SafeAreaView>
   );

@@ -1,246 +1,233 @@
 import React, { useEffect, useState } from "react";
-
 import {
-  ScrollView,
   View,
   Text,
-  useColorScheme,
+  TextInput,
   TouchableOpacity,
-  FlatList,
-  Image,
+  useColorScheme,
   Alert,
-  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import { useRouter } from "expo-router";
 
-import { Ionicons } from "@expo/vector-icons";
-
-import HomeHeader from "../../components/home/HomeHeader";
-
-import ProfileCompletionCard from "@/components/home/ProfileCompletionCard";
-
-type Orchard = {
-  id: string;
-  name: string;
-  message: string;
-  image?: string;
-  variety?: string;
-  orchardType?: string;
-  area?: string;
-  landType?: string;
-};
-
-const { width } = Dimensions.get("window");
-const CARD_WIDTH = width * 0.82;
-
-export default function Home() {
+export default function AddStep1() {
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
 
-  const [orchards, setOrchards] = useState<Orchard[]>([]);
+  const [name, setName] = useState("");
+  const [district, setDistrict] = useState("");
+  const [block, setBlock] = useState("");
+  const [village, setVillage] = useState("");
 
   useEffect(() => {
-    loadOrchards();
+    const loadEditing = async () => {
+      const data = await AsyncStorage.getItem("editingOrchard");
+
+      if (data) {
+        const orchard = JSON.parse(data);
+        setName(orchard.name || "");
+        setDistrict(orchard.district || "");
+        setBlock(orchard.block || "");
+        setVillage(orchard.village || "");
+      }
+    };
+
+    loadEditing();
   }, []);
 
-  const loadOrchards = async () => {
-    try {
-      const savedOrchards = await AsyncStorage.getItem("orchards");
-
-      if (savedOrchards) {
-        setOrchards(JSON.parse(savedOrchards));
-      }
-    } catch (err) {
-      console.log(err);
+  const validate = () => {
+    if (!name.trim()) {
+      Alert.alert("Missing Field", "Orchard Name is required");
+      return false;
     }
+    if (!district.trim()) {
+      Alert.alert("Missing Field", "District is required");
+      return false;
+    }
+    if (!block.trim()) {
+      Alert.alert("Missing Field", "Block is required");
+      return false;
+    }
+    if (!village.trim()) {
+      Alert.alert("Missing Field", "Village is required");
+      return false;
+    }
+    return true;
   };
 
-  // ✅ FIXED: navigation only (no blocking async)
-  const addNewOrchard = () => {
-    AsyncStorage.removeItem("editingOrchard");
-    AsyncStorage.removeItem("newOrchard");
+  const saveAndNext = async () => {
+    if (!validate()) return;
+
+    const orchardData = {
+      name: name.trim(),
+      district: district.trim(),
+      block: block.trim(),
+      village: village.trim(),
+    };
+
+    const existingEdit = await AsyncStorage.getItem("editingOrchard");
+
+    if (existingEdit) {
+      // ✅ EDIT MODE → preserve session
+      await AsyncStorage.setItem(
+        "editingOrchard",
+        JSON.stringify({
+          ...JSON.parse(existingEdit),
+          ...orchardData,
+        })
+      );
+    } else {
+      // 🆕 CREATE MODE
+      await AsyncStorage.setItem("newOrchard", JSON.stringify(orchardData));
+    }
 
     router.push("/orchard/add-step-2");
   };
 
-  const editOrchard = async (orchard: Orchard) => {
-    await AsyncStorage.setItem(
-      "editingOrchard",
-      JSON.stringify(orchard)
-    );
+  const inputBase =
+    "rounded-2xl px-5 py-5 text-lg border";
 
-    router.push("/orchard/add-step-2");
-  };
-
-  const deleteOrchard = async (id: string) => {
-    Alert.alert("Delete Orchard", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          const updated = orchards.filter((o) => o.id !== id);
-
-          setOrchards(updated);
-
-          await AsyncStorage.setItem(
-            "orchards",
-            JSON.stringify(updated)
-          );
-        },
-      },
-    ]);
-  };
+  // ✅ FIXED ONLY HERE (SYNTAX FIX)
+  const inputStyle = isDark
+    ? `${inputBase} bg-slate-800 text-white border-slate-700`
+    : `${inputBase} bg-white text-green-950 border-green-100`;
 
   return (
     <SafeAreaView
-      className={`flex-1 ${
-        isDark ? "bg-slate-950" : "bg-lime-50"
-      }`}
+      className={`flex-1 ${isDark ? "bg-slate-950" : "bg-lime-50"}`}
     >
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        className="flex-1"
       >
-        <HomeHeader />
+        <View className="flex-1 px-5 pt-5">
 
-        {/* DASHBOARD */}
-        <View className="px-5 mt-4">
+          {/* HEADER */}
           <Text
-            className={`text-2xl font-bold ${
+            className={`text-3xl font-bold ${
               isDark ? "text-white" : "text-green-950"
             }`}
           >
-            Dashboard
+            Add Orchard
           </Text>
 
           <Text
-            className={`mt-2 leading-6 ${
+            className={`mt-2 mb-6 text-base ${
               isDark ? "text-gray-400" : "text-green-700"
             }`}
           >
-            Your agricultural insights, orchard advisories, field monitoring, and recommendations will appear here.
+            Step 1 of 3 • Basic orchard information
           </Text>
-        </View>
 
-        {/* ORCHARDS */}
-        <View className="mt-6">
-          <View className="px-5 flex-row items-center justify-between mb-4">
-            <Text
-              className={`text-xl font-bold ${
-                isDark ? "text-white" : "text-green-950"
-              }`}
-            >
-              My Orchards
-            </Text>
+          {/* FORM */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 50 }}
+            className="flex-1"
+          >
+            <View className="gap-6">
 
-            <TouchableOpacity
-              onPress={addNewOrchard}
-              className="bg-green-600 w-12 h-12 rounded-full items-center justify-center"
-            >
-              <Ionicons name="add" size={26} color="white" />
-            </TouchableOpacity>
-          </View>
-
-          <FlatList
-            data={orchards}
-            keyExtractor={(item) => item.id}
-            horizontal
-            snapToInterval={CARD_WIDTH + 14}
-            decelerationRate="fast"
-            disableIntervalMomentum
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingLeft: 20,
-              paddingRight: 60,
-            }}
-            renderItem={({ item, index }) => {
-              const isLast = index === orchards.length - 1;
-
-              return (
-                <View
-                  style={{
-                    width: isLast ? width - 40 : CARD_WIDTH,
-                    marginRight: 14,
-                  }}
+              {/* ORCHARD NAME */}
+              <View>
+                <Text
+                  className={`mb-2 text-base font-semibold ${
+                    isDark ? "text-gray-300" : "text-green-900"
+                  }`}
                 >
-                  <View
-                    className={`rounded-3xl overflow-hidden border ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700"
-                        : "bg-white border-green-100"
-                    }`}
-                  >
-                    {item.image ? (
-                      <Image
-                        source={{ uri: item.image }}
-                        className="w-full aspect-[16/9]"
-                        resizeMode="cover"
-                      />
-                    ) : null}
+                  Orchard Name *
+                </Text>
 
-                    <View className="p-5">
-                      <Text
-                        className={`text-lg font-bold ${
-                          isDark ? "text-white" : "text-green-950"
-                        }`}
-                      >
-                        {item.name}
-                      </Text>
+                <TextInput
+                  placeholder="Enter orchard name"
+                  placeholderTextColor="#888"
+                  value={name}
+                  onChangeText={setName}
+                  className={inputStyle}
+                  style={{ textAlignVertical: "center" }}
+                />
+              </View>
 
-                      <Text
-                        className={`mt-2 ${
-                          isDark ? "text-gray-300" : "text-green-700"
-                        }`}
-                      >
-                        {item.variety} • {item.orchardType}
-                      </Text>
+              {/* DISTRICT */}
+              <View>
+                <Text
+                  className={`mb-2 text-base font-semibold ${
+                    isDark ? "text-gray-300" : "text-green-900"
+                  }`}
+                >
+                  District *
+                </Text>
 
-                      <Text
-                        className={`mt-1 ${
-                          isDark ? "text-gray-400" : "text-green-700"
-                        }`}
-                      >
-                        {item.area} Canals • {item.landType}
-                      </Text>
+                <TextInput
+                  placeholder="Select district"
+                  placeholderTextColor="#888"
+                  value={district}
+                  onChangeText={setDistrict}
+                  className={inputStyle}
+                  style={{ textAlignVertical: "center" }}
+                />
+              </View>
 
-                      <View className="flex-row mt-5 gap-3">
-                        <TouchableOpacity
-                          onPress={() => editOrchard(item)}
-                          className="bg-green-600 px-5 py-3 rounded-2xl flex-1"
-                        >
-                          <Text className="text-white text-center font-semibold">
-                            Edit
-                          </Text>
-                        </TouchableOpacity>
+              {/* BLOCK */}
+              <View>
+                <Text
+                  className={`mb-2 text-base font-semibold ${
+                    isDark ? "text-gray-300" : "text-green-900"
+                  }`}
+                >
+                  Block *
+                </Text>
 
-                        <TouchableOpacity
-                          onPress={() => deleteOrchard(item.id)}
-                          className="bg-red-500 px-5 py-3 rounded-2xl flex-1"
-                        >
-                          <Text className="text-white text-center font-semibold">
-                            Delete
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              );
-            }}
-          />
+                <TextInput
+                  placeholder="Enter block"
+                  placeholderTextColor="#888"
+                  value={block}
+                  onChangeText={setBlock}
+                  className={inputStyle}
+                  style={{ textAlignVertical: "center" }}
+                />
+              </View>
+
+              {/* VILLAGE */}
+              <View>
+                <Text
+                  className={`mb-2 text-base font-semibold ${
+                    isDark ? "text-gray-300" : "text-green-900"
+                  }`}
+                >
+                  Village *
+                </Text>
+
+                <TextInput
+                  placeholder="Enter village"
+                  placeholderTextColor="#888"
+                  value={village}
+                  onChangeText={setVillage}
+                  className={inputStyle}
+                  style={{ textAlignVertical: "center" }}
+                />
+              </View>
+
+            </View>
+          </ScrollView>
+
+          {/* FOOTER BUTTON */}
+          <TouchableOpacity
+            onPress={saveAndNext}
+            activeOpacity={0.85}
+            className="bg-green-600 py-5 rounded-2xl mb-4"
+          >
+            <Text className="text-white text-center font-semibold text-lg">
+              Next
+            </Text>
+          </TouchableOpacity>
+
         </View>
-
-        {/* PROFILE */}
-        <View className="px-5 mt-6">
-          <ProfileCompletionCard progress={70} />
-        </View>
-      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
