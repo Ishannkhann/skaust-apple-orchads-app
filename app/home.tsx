@@ -20,9 +20,11 @@ import { useRouter } from "expo-router";
 
 import { Ionicons } from "@expo/vector-icons";
 
-import HomeHeader from "../components/home/HomeHeader";
+import HomeHeader from "../components/Home/HomeHeader";
 
-import ProfileCompletionCard from "../components/home/ProfileCompletionCard";
+import ProfileCompletionCard from "../components/Home/ProfileCompletionCard";
+
+import { useFocusEffect } from "@react-navigation/native";
 
 type Orchard = {
   id: string;
@@ -51,9 +53,11 @@ export default function Home() {
   // ✅ FIX: prevent double navigation
   const isNavigatingRef = useRef(false);
 
-  useEffect(() => {
-    loadOrchards();
-  }, []);
+    useFocusEffect(
+      React.useCallback(() => {
+        loadOrchards();
+      }, [])
+    );
 
   const loadOrchards = async () => {
     try {
