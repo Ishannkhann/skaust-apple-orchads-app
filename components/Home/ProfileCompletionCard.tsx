@@ -25,6 +25,7 @@ export default function ProfileCompletionCard({
     useColorScheme() === "dark";
 
   return (
+
     <View
       className={`mt-6 rounded-3xl p-5 border ${
         isDark
@@ -38,8 +39,13 @@ export default function ProfileCompletionCard({
 
         <View>
 
+          {/* TITLE */}
           <Text
-            className={`text-lg font-bold ${
+            style={{
+              fontFamily:
+                "Montserrat_700Bold",
+            }}
+            className={`text-lg ${
               isDark
                 ? "text-white"
                 : "text-green-950"
@@ -48,7 +54,12 @@ export default function ProfileCompletionCard({
             Complete Your Profile
           </Text>
 
+          {/* SUBTITLE */}
           <Text
+            style={{
+              fontFamily:
+                "Montserrat_500Medium",
+            }}
             className={`mt-1 ${
               isDark
                 ? "text-gray-400"
@@ -72,7 +83,13 @@ export default function ProfileCompletionCard({
             color="white"
           />
 
-          <Text className="text-white ml-2 font-semibold">
+          <Text
+            style={{
+              fontFamily:
+                "Montserrat_600SemiBold",
+            }}
+            className="text-white ml-2"
+          >
             Update
           </Text>
 
@@ -85,6 +102,10 @@ export default function ProfileCompletionCard({
 
       {/* DESCRIPTION */}
       <Text
+        style={{
+          fontFamily:
+            "Montserrat_500Medium",
+        }}
         className={`mt-4 leading-6 ${
           isDark
             ? "text-gray-400"

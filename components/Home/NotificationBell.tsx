@@ -26,6 +26,7 @@ interface NotificationBellProps {
 export default function NotificationBell({
   onPress,
 }: NotificationBellProps) {
+
   const isDark =
     useColorScheme() === "dark";
 
@@ -51,13 +52,16 @@ export default function NotificationBell({
   // LOAD COUNT
   const loadNotificationCount =
     async () => {
+
       try {
+
         const stored =
           await AsyncStorage.getItem(
             "notification_count"
           );
 
         if (stored) {
+
           const parsed =
             parseInt(stored);
 
@@ -67,7 +71,9 @@ export default function NotificationBell({
               : parsed
           );
         }
+
       } catch (error) {
+
         console.log(error);
       }
     };
@@ -75,19 +81,25 @@ export default function NotificationBell({
   // SAVE COUNT
   const saveNotificationCount =
     async (value: number) => {
+
       try {
+
         await AsyncStorage.setItem(
           "notification_count",
           value.toString()
         );
+
       } catch (error) {
+
         console.log(error);
       }
     };
 
   // BELL RING ANIMATION
   const ringBell = () => {
+
     Animated.sequence([
+
       Animated.timing(
         rotateAnim,
         {
@@ -131,17 +143,22 @@ export default function NotificationBell({
           useNativeDriver: true,
         }
       ),
+
     ]).start();
   };
 
   // HANDLE PRESS
   const handlePress =
     async () => {
+
       try {
+
         // CLEAR COUNT
         setCount(0);
 
-        await saveNotificationCount(0);
+        await saveNotificationCount(
+          0
+        );
 
         // NAVIGATE
         router.push(
@@ -152,7 +169,9 @@ export default function NotificationBell({
         if (onPress) {
           onPress();
         }
+
       } catch (error) {
+
         console.log(error);
       }
     };
@@ -160,6 +179,7 @@ export default function NotificationBell({
   const rotate =
     rotateAnim.interpolate({
       inputRange: [-1, 1],
+
       outputRange: [
         "-15deg",
         "15deg",
@@ -167,12 +187,14 @@ export default function NotificationBell({
     });
 
   return (
+
     <View
       style={{
         zIndex: 999,
         elevation: 999,
       }}
     >
+
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={handlePress}
@@ -191,6 +213,7 @@ export default function NotificationBell({
             : "bg-white border-green-100"
         }`}
       >
+
         <Animated.View
           style={{
             transform: [
@@ -198,6 +221,7 @@ export default function NotificationBell({
             ],
           }}
         >
+
           <Bell
             size={22}
             color={
@@ -206,18 +230,31 @@ export default function NotificationBell({
                 : "#14532d"
             }
           />
+
         </Animated.View>
 
+        {/* BADGE */}
         {count > 0 && (
+
           <View className="absolute -top-1 -right-1 bg-red-500 min-w-[20px] h-5 rounded-full items-center justify-center px-1">
-            <Text className="text-white text-[10px] font-bold">
+
+            <Text
+              style={{
+                fontFamily:
+                  "Montserrat_700Bold",
+              }}
+              className="text-white text-[10px]"
+            >
               {count > 99
                 ? "99+"
                 : count}
             </Text>
+
           </View>
         )}
+
       </TouchableOpacity>
+
     </View>
   );
 }

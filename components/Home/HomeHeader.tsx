@@ -19,12 +19,14 @@ import NotificationBell from "./NotificationBell";
 import SideDrawer from "./SideDrawer";
 
 export default function HomeHeader() {
+
   const isDark =
     useColorScheme() === "dark";
 
-  const [drawerVisible,
-    setDrawerVisible] =
-    useState(false);
+  const [
+    drawerVisible,
+    setDrawerVisible,
+  ] = useState(false);
 
   return (
     <>
@@ -47,6 +49,7 @@ export default function HomeHeader() {
                 : "bg-white border-green-100"
             }`}
           >
+
             <Menu
               size={24}
               color={
@@ -55,6 +58,7 @@ export default function HomeHeader() {
                   : "#14532d"
               }
             />
+
           </TouchableOpacity>
 
           {/* GREETING */}

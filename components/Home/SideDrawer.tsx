@@ -30,24 +30,39 @@ export default function SideDrawer({
   visible,
   onClose,
 }: SideDrawerProps) {
-  const isDark = useColorScheme() === "dark";
+
+  const isDark =
+    useColorScheme() === "dark";
 
   const logout = async () => {
+
     try {
-      await AsyncStorage.removeItem("isLoggedIn");
-      await AsyncStorage.removeItem("userPhone");
+
+      await AsyncStorage.removeItem(
+        "isLoggedIn"
+      );
+
+      await AsyncStorage.removeItem(
+        "userPhone"
+      );
+
       router.replace("/");
+
     } catch (error) {
+
       console.log(error);
     }
   };
 
   const menuItems = [
+
     {
       title: "Home",
       icon: House,
+
       onPress: () => {
         onClose();
+
         router.push("/home");
       },
     },
@@ -55,24 +70,33 @@ export default function SideDrawer({
     {
       title: "My Orchards",
       icon: Sprout,
+
       onPress: () => {
         onClose();
-        router.push("/orchard/my-orchards");
+
+        router.push(
+          "/orchard/my-orchards"
+        );
       },
     },
 
     {
       title: "Notifications",
       icon: Bell,
+
       onPress: () => {
         onClose();
-        router.push("/notifications");
+
+        router.push(
+          "/notifications"
+        );
       },
     },
 
     {
       title: "Profile",
       icon: User,
+
       onPress: () => {
         onClose();
       },
@@ -80,6 +104,7 @@ export default function SideDrawer({
   ];
 
   return (
+
     <Modal
       visible={visible}
       transparent
@@ -97,7 +122,9 @@ export default function SideDrawer({
         <TouchableOpacity
           activeOpacity={1}
           className={`w-[78%] h-full pt-16 px-5 ${
-            isDark ? "bg-slate-900" : "bg-white"
+            isDark
+              ? "bg-slate-900"
+              : "bg-white"
           }`}
         >
 
@@ -105,15 +132,32 @@ export default function SideDrawer({
           <View className="flex-row items-center justify-between">
 
             <Text
-              className={`text-2xl font-bold ${
-                isDark ? "text-white" : "text-green-950"
+              style={{
+                fontFamily:
+                  "Montserrat_700Bold",
+              }}
+              className={`text-2xl ${
+                isDark
+                  ? "text-white"
+                  : "text-green-950"
               }`}
             >
               Menu
             </Text>
 
-            <TouchableOpacity onPress={onClose}>
-              <X size={24} color={isDark ? "white" : "#14532d"} />
+            <TouchableOpacity
+              onPress={onClose}
+            >
+
+              <X
+                size={24}
+                color={
+                  isDark
+                    ? "white"
+                    : "#14532d"
+                }
+              />
+
             </TouchableOpacity>
 
           </View>
@@ -121,35 +165,54 @@ export default function SideDrawer({
           {/* MENU ITEMS */}
           <View className="mt-10">
 
-            {menuItems.map((item, index) => {
-              const Icon = item.icon;
+            {menuItems.map(
+              (item, index) => {
 
-              return (
-                <TouchableOpacity
-                  key={index}
-                  onPress={item.onPress}
-                  activeOpacity={0.8}
-                  className={`flex-row items-center py-4 px-4 rounded-2xl mb-3 ${
-                    isDark ? "bg-slate-800" : "bg-lime-50"
-                  }`}
-                >
+                const Icon =
+                  item.icon;
 
-                  <Icon
-                    size={22}
-                    color={isDark ? "white" : "#14532d"}
-                  />
+                return (
 
-                  <Text
-                    className={`ml-4 text-base font-semibold ${
-                      isDark ? "text-white" : "text-green-950"
+                  <TouchableOpacity
+                    key={index}
+                    onPress={
+                      item.onPress
+                    }
+                    activeOpacity={0.8}
+                    className={`flex-row items-center py-4 px-4 rounded-2xl mb-3 ${
+                      isDark
+                        ? "bg-slate-800"
+                        : "bg-lime-50"
                     }`}
                   >
-                    {item.title}
-                  </Text>
 
-                </TouchableOpacity>
-              );
-            })}
+                    <Icon
+                      size={22}
+                      color={
+                        isDark
+                          ? "white"
+                          : "#14532d"
+                      }
+                    />
+
+                    <Text
+                      style={{
+                        fontFamily:
+                          "Montserrat_600SemiBold",
+                      }}
+                      className={`ml-4 text-base ${
+                        isDark
+                          ? "text-white"
+                          : "text-green-950"
+                      }`}
+                    >
+                      {item.title}
+                    </Text>
+
+                  </TouchableOpacity>
+                );
+              }
+            )}
 
           </View>
 
@@ -160,9 +223,18 @@ export default function SideDrawer({
             className="mt-auto mb-10 flex-row items-center bg-red-500 py-4 rounded-2xl justify-center"
           >
 
-            <LogOut size={20} color="white" />
+            <LogOut
+              size={20}
+              color="white"
+            />
 
-            <Text className="text-white font-bold ml-3">
+            <Text
+              style={{
+                fontFamily:
+                  "Montserrat_700Bold",
+              }}
+              className="text-white ml-3"
+            >
               Logout
             </Text>
 

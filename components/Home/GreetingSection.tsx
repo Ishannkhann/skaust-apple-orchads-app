@@ -18,6 +18,7 @@ interface GreetingSectionProps {
 export default function GreetingSection({
   name,
 }: GreetingSectionProps) {
+
   const isDark =
     useColorScheme() === "dark";
 
@@ -37,8 +38,10 @@ export default function GreetingSection({
   ).current;
 
   useEffect(() => {
+
     Animated.loop(
       Animated.sequence([
+
         Animated.timing(
           rotateAnim,
           {
@@ -84,21 +87,32 @@ export default function GreetingSection({
         ),
 
         Animated.delay(1500),
+
       ])
     ).start();
+
   }, []);
 
-  const rotate = rotateAnim.interpolate({
-    inputRange: [-1, 1],
-    outputRange: [
-      "-18deg",
-      "18deg",
-    ],
-  });
+  const rotate =
+    rotateAnim.interpolate({
+      inputRange: [-1, 1],
+
+      outputRange: [
+        "-18deg",
+        "18deg",
+      ],
+    });
 
   return (
+
     <View className="flex-1 ml-4">
+
+      {/* GREETING */}
       <Text
+        style={{
+          fontFamily:
+            "Montserrat_500Medium",
+        }}
         className={`text-sm ${
           isDark
             ? "text-gray-400"
@@ -108,9 +122,15 @@ export default function GreetingSection({
         {greeting}
       </Text>
 
+      {/* NAME */}
       <View className="flex-row items-center mt-1">
+
         <Text
-          className={`text-2xl font-bold ${
+          style={{
+            fontFamily:
+              "Montserrat_700Bold",
+          }}
+          className={`text-2xl ${
             isDark
               ? "text-white"
               : "text-green-950"
@@ -124,12 +144,16 @@ export default function GreetingSection({
             transform: [
               { rotate },
             ],
+            fontFamily:
+              "Montserrat_600SemiBold",
           }}
           className="text-2xl ml-2"
         >
           👋
         </Animated.Text>
+
       </View>
+
     </View>
   );
 }

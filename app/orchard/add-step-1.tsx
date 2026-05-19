@@ -25,6 +25,7 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 
 export default function AddStep1() {
+
   const router = useRouter();
 
   const isDark =
@@ -33,7 +34,10 @@ export default function AddStep1() {
   const [name, setName] = useState("");
   const [district, setDistrict] =
     useState("");
-  const [block, setBlock] = useState("");
+
+  const [block, setBlock] =
+    useState("");
+
   const [village, setVillage] =
     useState("");
 
@@ -42,7 +46,9 @@ export default function AddStep1() {
 
   useFocusEffect(
     useCallback(() => {
+
       const loadData = async () => {
+
         const editing =
           await AsyncStorage.getItem(
             "editingOrchard"
@@ -55,6 +61,7 @@ export default function AddStep1() {
 
         // ✅ EDIT MODE (highest priority)
         if (editing) {
+
           const orchard =
             JSON.parse(editing);
 
@@ -75,11 +82,13 @@ export default function AddStep1() {
           );
 
           hasLoadedRef.current = true;
+
           return;
         }
 
-        // ✅ CREATE MODE (ONLY IF EXISTS)
+        // ✅ CREATE MODE
         if (newOrchard) {
+
           const orchard =
             JSON.parse(newOrchard);
 
@@ -100,24 +109,29 @@ export default function AddStep1() {
           );
 
           hasLoadedRef.current = true;
+
           return;
         }
 
-        // 🆕 TRUE FRESH START (ONLY ONCE)
+        // 🆕 TRUE FRESH START
         if (!hasLoadedRef.current) {
+
           setName("");
           setDistrict("");
           setBlock("");
           setVillage("");
+
           hasLoadedRef.current = true;
         }
       };
 
       loadData();
+
     }, [])
   );
 
   const validate = () => {
+
     if (!name.trim()) {
       Alert.alert(
         "Missing Field",
@@ -154,6 +168,7 @@ export default function AddStep1() {
   };
 
   const saveAndNext = async () => {
+
     if (!validate()) return;
 
     const orchardData = {
@@ -169,6 +184,7 @@ export default function AddStep1() {
       );
 
     if (existingEdit) {
+
       await AsyncStorage.setItem(
         "editingOrchard",
         JSON.stringify({
@@ -178,7 +194,9 @@ export default function AddStep1() {
           ...orchardData,
         })
       );
+
     } else {
+
       const existingNew =
         await AsyncStorage.getItem(
           "newOrchard"
@@ -210,6 +228,7 @@ export default function AddStep1() {
     : `${inputBase} bg-white text-green-950 border-green-100`;
 
   return (
+
     <SafeAreaView
       className={`flex-1 ${
         isDark
@@ -217,6 +236,7 @@ export default function AddStep1() {
           : "bg-lime-50"
       }`}
     >
+
       <KeyboardAvoidingView
         behavior={
           Platform.OS === "ios"
@@ -225,10 +245,16 @@ export default function AddStep1() {
         }
         className="flex-1"
       >
+
         <View className="flex-1 px-5 pt-5">
 
+          {/* HEADER */}
           <Text
-            className={`text-3xl font-bold ${
+            style={{
+              fontFamily:
+                "Montserrat_700Bold",
+            }}
+            className={`text-3xl ${
               isDark
                 ? "text-white"
                 : "text-green-950"
@@ -238,6 +264,10 @@ export default function AddStep1() {
           </Text>
 
           <Text
+            style={{
+              fontFamily:
+                "Montserrat_500Medium",
+            }}
             className={`mt-2 mb-6 text-base ${
               isDark
                 ? "text-gray-400"
@@ -256,11 +286,18 @@ export default function AddStep1() {
             }}
             className="flex-1"
           >
+
             <View className="gap-6">
 
+              {/* ORCHARD NAME */}
               <View>
+
                 <Text
-                  className={`mb-2 text-base font-semibold ${
+                  style={{
+                    fontFamily:
+                      "Montserrat_600SemiBold",
+                  }}
+                  className={`mb-2 text-base ${
                     isDark
                       ? "text-gray-300"
                       : "text-green-900"
@@ -278,13 +315,23 @@ export default function AddStep1() {
                   style={{
                     textAlignVertical:
                       "center",
+
+                    fontFamily:
+                      "Montserrat_500Medium",
                   }}
                 />
+
               </View>
 
+              {/* DISTRICT */}
               <View>
+
                 <Text
-                  className={`mb-2 text-base font-semibold ${
+                  style={{
+                    fontFamily:
+                      "Montserrat_600SemiBold",
+                  }}
+                  className={`mb-2 text-base ${
                     isDark
                       ? "text-gray-300"
                       : "text-green-900"
@@ -304,13 +351,23 @@ export default function AddStep1() {
                   style={{
                     textAlignVertical:
                       "center",
+
+                    fontFamily:
+                      "Montserrat_500Medium",
                   }}
                 />
+
               </View>
 
+              {/* BLOCK */}
               <View>
+
                 <Text
-                  className={`mb-2 text-base font-semibold ${
+                  style={{
+                    fontFamily:
+                      "Montserrat_600SemiBold",
+                  }}
+                  className={`mb-2 text-base ${
                     isDark
                       ? "text-gray-300"
                       : "text-green-900"
@@ -328,13 +385,23 @@ export default function AddStep1() {
                   style={{
                     textAlignVertical:
                       "center",
+
+                    fontFamily:
+                      "Montserrat_500Medium",
                   }}
                 />
+
               </View>
 
+              {/* VILLAGE */}
               <View>
+
                 <Text
-                  className={`mb-2 text-base font-semibold ${
+                  style={{
+                    fontFamily:
+                      "Montserrat_600SemiBold",
+                  }}
+                  className={`mb-2 text-base ${
                     isDark
                       ? "text-gray-300"
                       : "text-green-900"
@@ -354,25 +421,41 @@ export default function AddStep1() {
                   style={{
                     textAlignVertical:
                       "center",
+
+                    fontFamily:
+                      "Montserrat_500Medium",
                   }}
                 />
+
               </View>
 
             </View>
+
           </ScrollView>
 
+          {/* BUTTON */}
           <TouchableOpacity
             onPress={saveAndNext}
             activeOpacity={0.85}
             className="bg-green-600 py-5 rounded-2xl mb-4"
           >
-            <Text className="text-white text-center font-semibold text-lg">
+
+            <Text
+              style={{
+                fontFamily:
+                  "Montserrat_600SemiBold",
+              }}
+              className="text-white text-center text-lg"
+            >
               Next
             </Text>
+
           </TouchableOpacity>
 
         </View>
+
       </KeyboardAvoidingView>
+
     </SafeAreaView>
   );
 }

@@ -14,6 +14,7 @@ export default function ProgressBar({
     progress < 80;
 
   return (
+
     <View
       className={`w-full h-3 rounded-full overflow-hidden mt-3 ${
         isIncomplete
