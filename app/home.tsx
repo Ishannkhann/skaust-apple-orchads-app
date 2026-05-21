@@ -151,138 +151,153 @@ export default function Home() {
       >
         <HomeHeader />
 
-        {/* COMPACT INLINE WEATHER TILE */}
-        <View className="px-5 mt-4">
-          <View
-            className={`rounded-[24px] overflow-hidden border ${
-              isDark
-                ? "bg-slate-900 border-slate-800"
-                : "bg-white border-green-100"
-            }`}
-          >
-            <View className="px-4 py-4">
-              <View className="flex-row items-center justify-between">
-                
-                {/* LEFT WEATHER */}
-                <View className="flex-row items-center flex-1">
-                  <View>
-                    <Text
-                      style={{ fontFamily: "Montserrat_600SemiBold" }}
-                      className={`text-[10px] tracking-[1.5px] ${
-                        isDark ? "text-white/60" : "text-green-900/60"
-                      }`}
-                    >
-                      SRINAGAR • LIVE
-                    </Text>
+          {/* COMPACT INLINE WEATHER TILE */}
+          <View className="px-5 mt-4">
+            <View
+              className={`rounded-[24px] overflow-hidden border ${
+                isDark
+                  ? "bg-slate-900 border-slate-800"
+                  : "bg-white border-green-100"
+              }`}
+            >
+              <View className="px-4 py-3">
 
-                    <View className="flex-row items-center mt-1">
-                      <Animated.Text
-                        style={{
-                          fontFamily: "Montserrat_700Bold",
-                          transform: [{ scale: tempAnim }],
-                        }}
-                        className={`text-[38px] leading-none ${
+                {/* TOP ROW */}
+                <View className="flex-row items-center justify-between">
+
+                  {/* LEFT WEATHER */}
+                  <View className="flex-row items-center flex-1">
+                    <View>
+
+                      {/* LOCATION + LIVE DOT */}
+                      <View className="flex-row items-center">
+                        <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                        <Text
+                          style={{ fontFamily: "Montserrat_600SemiBold" }}
+                          className={`text-[10px] tracking-[1.2px] ${
+                            isDark ? "text-white/60" : "text-green-900/60"
+                          }`}
+                        >
+                          SRINAGAR • LIVE
+                        </Text>
+                      </View>
+
+                      {/* TEMP + ICON */}
+                      <View className="flex-row items-center mt-0.5">
+
+                        <View
+                          style={{
+                            height: 48,
+                            flexDirection: "row",
+                            alignItems: "center",
+                          }}
+                        >
+
+                          <Animated.Text
+                            style={{
+                              fontFamily: "Montserrat_700Bold",
+                              fontSize: 38,
+                              lineHeight: 48,
+                              transform: [{ scale: tempAnim }],
+                            }}
+                            className={isDark ? "text-white" : "text-green-950"}
+                          >
+                            26°C
+                          </Animated.Text>
+
+                          <View
+                            style={{
+                              marginLeft: 26,
+                              transform: [{ translateY: -2 }],
+                            }}
+                          >
+                            <Ionicons
+                              name="partly-sunny"
+                              size={44}
+                              color="#facc15"
+                            />
+                          </View>
+
+                        </View>
+
+                      </View>
+
+                      <Text
+                        style={{ fontFamily: "Montserrat_500Medium" }}
+                        className={`text-[11px] mt-0.5 ${
+                          isDark ? "text-white/70" : "text-green-900/70"
+                        }`}
+                      >
+                        Partly Sunny
+                      </Text>
+
+                    </View>
+                  </View>
+
+                  {/* RIGHT STACKED METRICS (NO WIND) */}
+                  <View className="items-end">
+
+                    {/* RAIN */}
+                    <View className="flex-row items-center">
+                      <Ionicons name="rainy-outline" size={13} color="#60a5fa" />
+                      <Text
+                        style={{ fontFamily: "Montserrat_500Medium" }}
+                        className={`ml-1 text-[10px] ${
                           isDark ? "text-white" : "text-green-950"
                         }`}
                       >
-                        26°
-                      </Animated.Text>
-
-                      <Ionicons
-                        name="partly-sunny"
-                        size={20}
-                        color="#facc15"
-                        style={{ marginLeft: 8 }}
-                      />
+                        Rain 2mm
+                      </Text>
                     </View>
 
-                    <Text
-                      style={{ fontFamily: "Montserrat_500Medium" }}
-                      className={`text-[12px] mt-0.5 ${
-                        isDark ? "text-white/70" : "text-green-900/70"
-                      }`}
-                    >
-                      Partly Sunny
-                    </Text>
-                  </View>
-                </View>
+                    <Text className="text-[9px] text-gray-400 my-0.5">───</Text>
 
-                {/* CENTER RAIN */}
-                <View className="mx-3 px-3 py-2 rounded-2xl bg-black/5 border border-black/5 flex-row items-center">
-                  <View className="w-8 h-8 rounded-full bg-blue-500/10 items-center justify-center">
-                    <Ionicons name="rainy-outline" size={14} color="#60a5fa" />
-                  </View>
+                    {/* HUMIDITY */}
+                    <View className="flex-row items-center">
+                      <Ionicons name="water-outline" size={13} color="#60a5fa" />
+                      <Text
+                        style={{ fontFamily: "Montserrat_500Medium" }}
+                        className={`ml-1 text-[10px] ${
+                          isDark ? "text-white" : "text-green-950"
+                        }`}
+                      >
+                        Humidity 68%
+                      </Text>
+                    </View>
 
-                  <View className="ml-2">
+                    {/* 30% BELOW STACK */}
                     <Text
                       style={{ fontFamily: "Montserrat_700Bold" }}
-                      className={isDark ? "text-white text-[12px]" : "text-green-950 text-[12px]"}
+                      className="text-blue-500 text-[16px] mt-1"
                     >
-                      Rain
+                      Rain Probability : 30%
                     </Text>
 
-                    <Text
-                      style={{ fontFamily: "Montserrat_500Medium" }}
-                      className={isDark ? "text-white/60 text-[10px]" : "text-green-900/60 text-[10px]"}
-                    >
-                      8 PM • 2mm
-                    </Text>
                   </View>
                 </View>
 
-                {/* RIGHT PERCENT */}
-                <View className="items-end">
-                  <Text
-                    style={{ fontFamily: "Montserrat_700Bold" }}
-                    className="text-blue-500 text-[24px]"
-                  >
-                    30%
-                  </Text>
+                {/* SEGMENTED BLUE BAR */}
+                <View className="flex-row mt-2 items-center">
 
-                  <Text
-                    style={{ fontFamily: "Montserrat_500Medium" }}
-                    className={isDark ? "text-white/60 text-[10px]" : "text-green-900/60 text-[10px]"}
-                  >
-                    shower chance
-                  </Text>
-                </View>
-              </View>
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <View
+                      key={i}
+                      className="flex-1 mx-[1px] h-1 rounded-full bg-black/10 overflow-hidden"
+                    >
+                      <View
+                        className={`h-full ${
+                          i < 3 ? "bg-blue-500" : "bg-transparent"
+                        }`}
+                      />
+                    </View>
+                  ))}
 
-              {/* INLINE METRICS */}
-              <View className="flex-row mt-3">
-                
-                <View className="px-3 py-1.5 rounded-full bg-black/5 mr-2 flex-row items-center border border-black/5">
-                  <Ionicons name="water-outline" size={12} color={isDark ? "white" : "#14532d"} />
-                  <Text
-                    style={{ fontFamily: "Montserrat_500Medium" }}
-                    className={isDark ? "text-white text-[10px] ml-1.5" : "text-green-900 text-[10px] ml-1.5"}
-                  >
-                    68%
-                  </Text>
-                </View>
-
-                <View className="px-3 py-1.5 rounded-full bg-black/5 mr-2 flex-row items-center border border-black/5">
-                  <Ionicons name="leaf-outline" size={12} color={isDark ? "white" : "#14532d"} />
-                  <Text
-                    style={{ fontFamily: "Montserrat_500Medium" }}
-                    className={isDark ? "text-white text-[10px] ml-1.5" : "text-green-900 text-[10px] ml-1.5"}
-                  >
-                    3 km/h
-                  </Text>
-                </View>
-
-                <View className="flex-1 justify-center ml-1">
-                  <View className="h-1.5 rounded-full bg-black/10 overflow-hidden">
-                    <View className="w-[30%] h-full rounded-full bg-blue-500" />
-                  </View>
                 </View>
 
               </View>
             </View>
           </View>
-        </View>
-
-        {/* REST OF YOUR FILE UNCHANGED */}
+          
         <View
           className={`mt-6 ${
             orchards.length === 0 ? "flex-1 justify-center" : ""
@@ -397,7 +412,7 @@ export default function Home() {
                       >
                         <View className="flex-1 bg-black/30 p-4">
                           {/* unchanged orchard card content */}
-                        
+
                           {/* TOP */}
                           <View className="flex-row items-start justify-between">
                             <View className="flex-row flex-1 pr-3">
@@ -433,69 +448,65 @@ export default function Home() {
                               </View>
                             </View>
 
-                            <View className="items-end">
-                              <Animated.Text
-                                style={{
-                                  fontFamily: "Montserrat_700Bold",
-                                  transform: [{ scale: tempAnim }],
-                                }}
-                                className="text-white text-[32px] leading-none"
+                        {/* RIGHT WEATHER STACK */}
+                        <View className="items-end">
+                          {/* TEMP ROW */}
+                          <View className="flex-row items-center">
+                            <Text
+                              style={{ fontFamily: "Montserrat_600SemiBold" }}
+                              className="text-white text-[9px] mr-2 opacity-80"
+                            >
+                              TEMP :
+                            </Text>
+
+                            <Ionicons
+                              name="thermometer-outline"
+                              size={14}
+                              color="white"
+                              style={{ marginRight: 4 }}
+                            />
+
+                            <Animated.Text
+                              style={{
+                                fontFamily: "Montserrat_700Bold",
+                                transform: [{ scale: tempAnim }],
+                              }}
+                              className="text-white text-[20px] leading-none"
+                            >
+                              24°C
+                            </Animated.Text>
+                          </View>
+
+                          {/* PILL STACK — wrapper sizes to widest pill */}
+                          <View className="mt-1" style={{ alignSelf: 'flex-end' }}>
+
+                            {/* PARTLY CLOUDY */}
+                            <View className="flex-row items-center w-full px-3 py-1 rounded-full bg-white/20">
+                              <Ionicons name="partly-sunny-outline" size={12} color="white" style={{ marginRight: 4 }} />
+                              <Text
+                                style={{ fontFamily: "Montserrat_600SemiBold", includeFontPadding: false, textAlignVertical: "center" }}
+                                className="text-white text-[11px] leading-none"
                               >
-                                24°
-                              </Animated.Text>
-
-                              <View className="flex-row items-center mt-1">
-                                <Ionicons
-                                  name="partly-sunny-outline"
-                                  size={14}
-                                  color="white"
-                                />
-                                <Text
-                                  style={{
-                                    fontFamily: "Montserrat_600SemiBold",
-                                  }}
-                                  className="text-white text-[12px] ml-1"
-                                >
-                                  Partly Cloudy
-                                </Text>
-                              </View>
-
-                              <View className="flex-row mt-2">
-                                <View className="px-3 py-1 rounded-full bg-white/20 mr-2 flex-row items-center">
-                                  <Ionicons
-                                    name="rainy-outline"
-                                    size={12}
-                                    color="white"
-                                  />
-                                  <Text
-                                    style={{
-                                      fontFamily:
-                                        "Montserrat_500Medium",
-                                    }}
-                                    className="text-white text-[11px] ml-1"
-                                  >
-                                    2mm
-                                  </Text>
-                                </View>
-
-                                <View className="px-3 py-1 rounded-full bg-white/20 flex-row items-center">
-                                  <Ionicons
-                                    name="thermometer-outline"
-                                    size={12}
-                                    color="white"
-                                  />
-                                  <Text
-                                    style={{
-                                      fontFamily:
-                                        "Montserrat_500Medium",
-                                    }}
-                                    className="text-white text-[11px] ml-1"
-                                  >
-                                    24°
-                                  </Text>
-                                </View>
-                              </View>
+                                Partly Cloudy
+                              </Text>
                             </View>
+
+                            <View className="h-1" />
+
+                            {/* RAIN */}
+                            <View className="flex-row items-center w-full px-3 py-1 rounded-full bg-white/20">
+                              <Ionicons name="rainy-outline" size={12} color="white" style={{ marginRight: 4 }} />
+                              <Text
+                                style={{ fontFamily: "Montserrat_500Medium", includeFontPadding: false, textAlignVertical: "center" }}
+                                className="text-white text-[11px] leading-none"
+                              >
+                                Rain : 144mm
+                              </Text>
+                            </View>
+
+                          </View>
+                        </View>
+
                           </View>
 
                           <View className="flex-1" />
