@@ -388,15 +388,22 @@ export default function Home() {
               }}
               renderItem={({ item }) => {
                 return (
-                  <TouchableOpacity
-                    activeOpacity={0.92}
-                    onPress={() => editOrchard(item)}
-                    style={{
-                      width: CARD_WIDTH,
-                      height: CARD_HEIGHT,
-                      marginRight: 14,
-                    }}
-                  >
+                        <TouchableOpacity
+                          activeOpacity={0.92}
+                          onPress={() =>
+                            router.push({
+                              pathname: "/orchard/orchard-detail",
+                              params: {
+                                orchard: JSON.stringify(item),
+                              },
+                            })
+                          }
+                          style={{
+                            width: CARD_WIDTH,
+                            height: CARD_HEIGHT,
+                            marginRight: 14,
+                          }}
+                        >
                     <View
                       style={{ height: CARD_HEIGHT }}
                       className={`rounded-3xl overflow-hidden border ${
