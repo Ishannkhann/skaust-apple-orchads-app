@@ -15,24 +15,34 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import Svg, { Path, Circle, Rect, Text as SvgText, Defs, LinearGradient, Stop, G } from "react-native-svg";
-import HomeHeader from "../../components/Home/HomeHeader";
 
 const { height, width } = Dimensions.get("window");
 const HERO_HEIGHT = 200;
 
 // ─── CONFIGURATION ───
 // REPLACE THIS SINGLE VALUE WITH YOUR REAL OPENWEATHER API KEY
-const OPENWEATHER_API_KEY = "your_actual_key_here";
+const OPENWEATHER_API_KEY = "YOUR_OPENWEATHER_API_KEY";
 
 // Mock fallback weather data
 const MOCK_HOURLY = [
+  // Today's hours (0 - 7)
   { time: "12:30 AM", temp: 30.3, icon: "rainy", rainProb: 65, rainVol: "2.4mm" },
-  { time: "01:30 AM", temp: 30.3, icon: "rainy", rainProb: 80, rainVol: "4.1mm" },
-  { time: "02:30 AM", temp: 30.3, icon: "cloudy", rainProb: 40 },
-  { time: "03:30 AM", temp: 29.8, icon: "partly-sunny", rainProb: 15 },
-  { time: "04:30 AM", temp: 29.2, icon: "sunny", rainProb: 10 },
-  { time: "05:30 AM", temp: 28.5, icon: "sunny", rainProb: 5 },
-  { time: "06:30 AM", temp: 28.0, icon: "sunny", rainProb: 0 },
+  { time: "1:30 AM", temp: 30.3, icon: "rainy", rainProb: 80, rainVol: "4.1mm" },
+  { time: "2:30 AM", temp: 30.3, icon: "cloudy", rainProb: 40 },
+  { time: "3:30 AM", temp: 29.8, icon: "partly-sunny", rainProb: 15 },
+  { time: "4:30 AM", temp: 29.2, icon: "sunny", rainProb: 10 },
+  { time: "5:30 AM", temp: 28.5, icon: "sunny", rainProb: 5 },
+  { time: "6:30 AM", temp: 28.0, icon: "sunny", rainProb: 0 },
+  { time: "7:30 AM", temp: 27.5, icon: "sunny", rainProb: 0 },
+  // Tomorrow's hours (8 - 15)
+  { time: "12:30 AM", temp: 22.0, icon: "rainy", rainProb: 90, rainVol: "5.5mm" },
+  { time: "1:30 AM", temp: 21.8, icon: "rainy", rainProb: 85, rainVol: "3.2mm" },
+  { time: "2:30 AM", temp: 21.5, icon: "thunderstorm", rainProb: 75, rainVol: "1.2mm" },
+  { time: "3:30 AM", temp: 22.0, icon: "cloudy", rainProb: 45 },
+  { time: "4:30 AM", temp: 23.5, icon: "partly-sunny", rainProb: 20 },
+  { time: "5:30 AM", temp: 24.2, icon: "sunny", rainProb: 10 },
+  { time: "6:30 AM", temp: 25.0, icon: "sunny", rainProb: 5 },
+  { time: "7:30 AM", temp: 24.8, icon: "sunny", rainProb: 0 },
 ];
 
 const MOCK_DAILY_16_DAYS = [
@@ -76,6 +86,107 @@ function AdvisoryIcon() {
   );
 }
 
+// Custom mathematical interpolation engine to convert 3-hour forecasts into 1-hour increments
+function interpolateToHourly(threeHourList: any[]) {
+  if (!threeHourList || threeHourList.length === 0) return [];
+  
+  const parseToMinutes = (timeStr: string) => {
+    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    if (!match) return 0;
+    let h = parseInt(match[1]);
+    const m = parseInt(match[2]);
+    const ampm = match[3];
+    if (ampm) {
+      if (ampm.toUpperCase() === "PM" && h < 12) h += 12;
+      if (ampm.toUpperCase() === "AM" && h === 12) h = 0;
+    }
+    return h * 60 + m;
+  };
+
+  // Check if the list is already in 1-hour intervals (e.g. mock data)
+  if (threeHourList.length > 1) {
+    const min0 = parseToMinutes(threeHourList[0].time);
+    const min1 = parseToMinutes(threeHourList[1].time);
+    let diff = min1 - min0;
+    if (diff < 0) diff += 24 * 60; // Handle midnight wrap-around
+    
+    // If interval is already ~1 hour, skip the interpolation block to avoid duplicates!
+    if (diff > 45 && diff < 75) {
+      console.log("🌦️ [OpenWeather] Hourly list is already in 1-hour intervals. Skipping interpolation.");
+      return threeHourList;
+    }
+  }
+
+  const interpolated: any[] = [];
+  
+  for (let i = 0; i < threeHourList.length - 1; i++) {
+    const cur = threeHourList[i];
+    const nxt = threeHourList[i + 1];
+    
+    const minCurrent = parseToMinutes(cur.time);
+    const minNext = parseToMinutes(nxt.time);
+    let diffMinutes = minNext - minCurrent;
+    if (diffMinutes < 0) diffMinutes += 24 * 60; // Midnight wrap-around
+    
+    const diffHours = Math.round(diffMinutes / 60);
+    
+    // If the distance is already 1 hour, just push current item and skip interpolation
+    if (diffHours <= 1) {
+      interpolated.push(cur);
+      continue;
+    }
+    
+    // Parse the start time (e.g., "12:30 AM" or "01:30 PM")
+    const timeMatch = cur.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    if (!timeMatch) {
+      interpolated.push(cur);
+      continue;
+    }
+    
+    let hour24 = parseInt(timeMatch[1]);
+    const min = parseInt(timeMatch[2]);
+    const ampm = timeMatch[3];
+    
+    if (ampm) {
+      if (ampm.toUpperCase() === "PM" && hour24 < 12) hour24 += 12;
+      if (ampm.toUpperCase() === "AM" && hour24 === 12) hour24 = 0;
+    }
+    
+    // Generate steps of 1-hour increments dynamically based on diffHours
+    for (let step = 0; step < diffHours; step++) {
+      const currentHour24 = (hour24 + step) % 24;
+      
+      // Convert back to clean 12-hour format without leading zeros (e.g., "1:30 AM")
+      const displayHour = currentHour24 % 12 === 0 ? 12 : currentHour24 % 12;
+      const displayAmpm = currentHour24 >= 12 ? "PM" : "AM";
+      const stepTimeStr = `${displayHour}:${String(min).padStart(2, '0')} ${displayAmpm}`;
+      
+      const ratio = step / diffHours;
+      // Smooth linear interpolation of temperatures and rain probabilities
+      const interpolatedTemp = cur.temp + ratio * (nxt.temp - cur.temp);
+      const interpolatedProb = Math.round(cur.rainProb + ratio * (nxt.rainProb - cur.rainProb));
+      const icon = ratio > 0.5 ? nxt.icon : cur.icon;
+      const desc = ratio > 0.5 ? nxt.desc : cur.desc;
+      
+      interpolated.push({
+        time: stepTimeStr,
+        temp: parseFloat(interpolatedTemp.toFixed(1)),
+        icon,
+        desc,
+        rainProb: interpolatedProb,
+        rainVol: cur.rainVol,
+      });
+    }
+  }
+  
+  // Add final item
+  if (threeHourList.length > 0) {
+    interpolated.push(threeHourList[threeHourList.length - 1]);
+  }
+  
+  return interpolated;
+}
+
 export default function OrchardDetailScreen() {
   const router = useRouter();
   const { orchard } = useLocalSearchParams();
@@ -97,7 +208,7 @@ export default function OrchardDetailScreen() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"home" | "info">("home");
 
-  // WEATHER SUB-TABS: Today, Tomorrow, Next Week
+  // WEATHER SUB-TABS: Today, Tomorrow, Next Week (Next 16 Days)
   const [weatherSubTab, setWeatherSubTab] = useState<"today" | "tomorrow" | "nextWeek">("today");
 
   // Weather States
@@ -127,7 +238,7 @@ export default function OrchardDetailScreen() {
 
       // Foolproof check: if key is unconfigured, return and show simulated weather data
       if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY.includes("YOUR_") || OPENWEATHER_API_KEY.trim() === "" || OPENWEATHER_API_KEY.length < 15) {
-        console.log("🌦️ [OpenWeather] No API Key set. Rendering fallback mock weather data.");
+        console.log(" 🌦️ [OpenWeather] No API Key set. Rendering fallback mock weather data.");
         setWeatherError("API Key is unconfigured. Showing simulated weather data.");
         return;
       }
@@ -135,7 +246,7 @@ export default function OrchardDetailScreen() {
       setLoading(true);
       setWeatherError(null);
       try {
-        console.log(`🌦️ [OpenWeather] Direct fetching 5-day forecast for city: "${location}"...`);
+        console.log(` 🌦️ [OpenWeather] Direct fetching 5-day forecast for city: "${location}"...`);
         
         // Fetch directly using City Name (eliminating geocoding extra step entirely!)
         let forecastRes = await fetch(
@@ -149,7 +260,7 @@ export default function OrchardDetailScreen() {
         
         // 404: City name not found. Fallback to Srinagar.
         if (forecastRes.status === 404) {
-          console.warn(`🌦️ [OpenWeather] City "${location}" not found. Trying default: "Srinagar"...`);
+          console.warn(` 🌦️ [OpenWeather] City "${location}" not found. Trying default: "Srinagar"...`);
           forecastRes = await fetch(
             `https://api.openweathermap.org/data/2.5/forecast?q=Srinagar&units=metric&appid=${OPENWEATHER_API_KEY}`
           );
@@ -165,16 +276,18 @@ export default function OrchardDetailScreen() {
         const forecastData = await forecastRes.json();
 
         if (forecastData && forecastData.list) {
-          console.log(`🌦️ [OpenWeather] Forecast fetched successfully! Parsing...`);
+          console.log(` 🌦️ [OpenWeather] Forecast fetched successfully! Parsing...`);
           
           // Get the resolved city name from the API response
           const resolvedName = forecastData.city?.name || location;
           setResolvedCity(resolvedName);
           
-          // Map Hourly Forecast (next 8 steps = 24 hours)
-          const mappedHourly = forecastData.list.slice(0, 8).map((item: any, idx: number) => {
+          // Map Hourly Forecast (next 16 steps = 48 hours to cover Today & Tomorrow full scrollable intervals)
+          const mappedHourly = forecastData.list.slice(0, 16).map((item: any, idx: number) => {
             const date = new Date(item.dt * 1000);
-            const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' });
+            
+            // Format time without leading zeros (e.g. "1:30 AM")
+            const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute:'2-digit' });
             
             let iconName = "partly-sunny";
             if (item.weather[0].main === "Rain") iconName = "rainy";
@@ -272,10 +385,10 @@ export default function OrchardDetailScreen() {
             hourly: mappedHourly,
             daily: finalDailyList,
           });
-          console.log(`🌦️ [OpenWeather] State successfully updated with real API data.`);
+          console.log(" 🌦️ [OpenWeather] State successfully updated with real API data.");
         }
       } catch (err: any) {
-        console.error("🌦️ [OpenWeather] Error: ", err.message);
+        console.error(" 🌦️ [OpenWeather] Error: ", err.message);
         setWeatherError(err.message || "Failed to fetch weather.");
       } finally {
         setLoading(false);
@@ -330,29 +443,36 @@ export default function OrchardDetailScreen() {
     ? dailyForecastList[1]
     : dailyForecastList[0];
 
-  // Pick correct active hourly list dynamically (Today's hours or Tomorrow's hours)
-  const activeHourlyList = (weatherSubTab === "tomorrow" && hourlyForecastList.length >= 7)
-    ? hourlyForecastList.slice(3, 7)
-    : hourlyForecastList.slice(0, 4);
+  // ─── INTERPOLATE TO TRUE 1-HOUR INCREMENTS ───
+  const interpolatedHourlyList = interpolateToHourly(hourlyForecastList);
+
+  // Pick correct active hourly list dynamically (Today's 24 hours or Tomorrow's 24 hours in 1-hour increments!)
+  // Slicing 24 elements represents exactly 24 full hours of 1-hour interval data!
+  const activeHourlyList = (weatherSubTab === "tomorrow" && interpolatedHourlyList.length >= 48)
+    ? interpolatedHourlyList.slice(24, 48)
+    : interpolatedHourlyList.slice(0, 24);
 
   // ─── HOURLY-BASED RAIN INTELLIGENCE GRAPH COORDINATES ───
-  const hourlyGraphData = activeHourlyList.length >= 4 ? activeHourlyList : hourlyForecastList.slice(0, 4);
+  // Using the exact 24 1-hour points to plot the graph dynamically!
+  const hourlyGraphData = activeHourlyList;
   
-  const svgWidth = 330;
-  const svgHeight = 70;
+  const svgWidth = 840; // Wider width (35px per hour step * 24 nodes) to allow smooth horizontal scrolling
+  const svgHeight = 85; // Sized perfectly to fit the stacked dual-line AM/PM time tags
   const points = hourlyGraphData.map((item, idx) => {
-    const stepSize = 300 / Math.max(hourlyGraphData.length - 1, 1);
+    const stepSize = 800 / Math.max(hourlyGraphData.length - 1, 1);
     const x = 15 + idx * stepSize;
     const prob = item.rainProb;
-    const y = 50 - (prob / 100) * 35;
+    const y = 45 - (prob / 100) * 32; // Calibrated y-coordinate range
     return { x, y, prob, vol: item.rainVol || "0mm", label: item.time };
   });
+
+  const fillPathD = `${points.reduce((acc, p, idx) => {
+    return acc + (idx === 0 ? `M ${p.x} ${p.y}` : ` L ${p.x} ${p.y}`);
+  }, "")} L ${points[points.length - 1].x} 55 L ${points[0].x} 55 Z`;
 
   const linePathD = points.reduce((acc, p, idx) => {
     return acc + (idx === 0 ? `M ${p.x} ${p.y}` : ` L ${p.x} ${p.y}`);
   }, "");
-
-  const fillPathD = `${linePathD} L ${points[points.length - 1].x} 60 L ${points[0].x} 60 Z`;
 
   return (
     <SafeAreaView
@@ -371,9 +491,6 @@ export default function OrchardDetailScreen() {
             isDark ? "bg-slate-950" : "bg-[#f4fbf0]"
           }`}
         >
-          {/* HEADER */}
-          <HomeHeader />
-
           {/* BACK BUTTON */}
           <TouchableOpacity
             onPress={() => router.back()}
@@ -601,7 +718,7 @@ export default function OrchardDetailScreen() {
                               isDark ? "text-white/70" : "text-slate-600"
                             }`}
                           >
-                            Rains On 16th & 17th
+                            Rains On 16th &amp; 17th
                           </Text>
                         </View>
 
@@ -617,7 +734,7 @@ export default function OrchardDetailScreen() {
                               isDark ? "text-white/70" : "text-slate-600"
                             }`}
                           >
-                            Scout For Aphids & Mites
+                            Scout For Aphids &amp; Mites
                           </Text>
                         </View>
                       </View>
@@ -646,7 +763,7 @@ export default function OrchardDetailScreen() {
                 {/* ─── NEW HIGH-FIDELITY WEATHER WIDGET SECTION (Matches Photo exactly) ─── */}
                 <View className="mt-2">
                   
-                  {/* WEATHER SUB-TABS: Today, Tomorrow, Next Week */}
+                  {/* WEATHER SUB-TABS: Today, Tomorrow, Next 16 Days (Matches Next 16 Days exactly) */}
                   <View className="flex-row items-center justify-between px-2 mb-3 mt-1">
                     <TouchableOpacity
                       onPress={() => setWeatherSubTab("today")}
@@ -655,7 +772,6 @@ export default function OrchardDetailScreen() {
                         backgroundColor: weatherSubTab === "today" ? "#7a9a60" : "transparent",
                       }}
                     >
-                      {/* FIXED: Dynamic color theme mapping so unselected tabs are visible in both light & dark modes */}
                       <Text
                         style={{ fontFamily: "Montserrat_700Bold", fontSize: 11 }}
                         className={
@@ -708,7 +824,7 @@ export default function OrchardDetailScreen() {
                             : "text-[#55624f]/80 font-semibold"
                         }
                       >
-                        Next Week
+                        Next 16 Days
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -876,94 +992,136 @@ export default function OrchardDetailScreen() {
                             </View>
                           </View>
 
-                          {/* HOURLY WEATHER STATS TIMELINE */}
-                          <View className="border-t border-white/20 pt-3 mt-1.5 flex-row justify-between">
-                            {activeHourlyList.map((h, i) => (
-                              <View key={i} className="items-center flex-1">
-                                <Text style={{ fontFamily: "Montserrat_500Medium", fontSize: 9 }} className="text-white/60">{h.time}</Text>
-                                <View className="flex-row items-center mt-1">
-                                  <Ionicons
-                                    name={
-                                      h.icon === "sunny" ? "sunny" :
-                                      h.icon === "rainy" ? "rainy" :
-                                      h.icon === "thunderstorm" ? "thunderstorm" :
-                                      h.icon === "cloudy" ? "cloudy" : "partly-sunny"
-                                    }
-                                    size={12}
-                                    color="white"
-                                    style={{ opacity: 0.8 }}
-                                  />
-                                  <Text style={{ fontFamily: "Montserrat_700Bold", fontSize: 11 }} className="text-white ml-1 font-bold">{h.temp}°C</Text>
+                          {/* --- SCROLLABLE HOURLY TIMELINE --- */}
+                          <View className="border-t border-white/20 pt-3 mt-1.5">
+                            <ScrollView
+                              horizontal
+                              showsHorizontalScrollIndicator={false}
+                              contentContainerStyle={{ paddingRight: 10, gap: 16 }}
+                            >
+                              {activeHourlyList.map((h, i) => (
+                                <View key={i} className="items-center px-2">
+                                  <Text style={{ fontFamily: "Montserrat_500Medium", fontSize: 9 }} className="text-white/60">{h.time}</Text>
+                                  <View className="my-1.5">
+                                    <Ionicons
+                                      name={
+                                        h.icon === "sunny" ? "sunny" :
+                                        h.icon === "rainy" ? "rainy" :
+                                        h.icon === "thunderstorm" ? "thunderstorm" :
+                                        h.icon === "cloudy" ? "cloudy" : "partly-sunny"
+                                      }
+                                      size={15}
+                                      color="white"
+                                      style={{ opacity: 0.9 }}
+                                    />
+                                  </View>
+                                  <Text style={{ fontFamily: "Montserrat_700Bold", fontSize: 11 }} className="text-white font-bold">{Math.round(h.temp)}°C</Text>
                                 </View>
-                              </View>
-                            ))}
+                              ))}
+                            </ScrollView>
                           </View>
 
-                          {/* COHESIVE GRAPH SECTION: Rain Intelligence line graph inside card (HOURLY BASED) */}
+                          {/* COHESIVE GRAPH SECTION: Scrollable Rain Intelligence line graph inside card (HOURLY BASED) */}
                           <View className="border-t border-white/20 pt-3 mt-3">
                             <Text
                               style={{ fontFamily: "Montserrat_700Bold", fontSize: 9, letterSpacing: 0.8 }}
-                              className="text-white/80 uppercase mb-1"
+                              className="text-white/80 uppercase mb-2"
                             >
-                              Hourly Rain Intelligence Graph
+                                                       Rain Probability Intelligence
                             </Text>
                             
-                            <View className="items-center justify-center mt-1">
-                              <Svg height={svgHeight} width="100%" viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
-                                <Defs>
-                                  <LinearGradient id="cardRainGrad" x1="0" y1="0" x2="0" y2="1">
-                                    <Stop offset="0%" stopColor="white" stopOpacity="0.35" />
-                                    <Stop offset="100%" stopColor="white" stopOpacity="0.0" />
-                                  </LinearGradient>
-                                </Defs>
+                            {/* --- FIXED Y-AXIS OVERLAY + SCROLLABLE GRAPH CONTAINER --- */}
+                            <View className="flex-row items-center mt-1">
+                              {/* Fixed Stationary Y-Axis Panel (Always visible on the left) */}
+                              <View style={{ width: 35 }}>
+                                <Svg height={svgHeight} width={35}>
+                                  <SvgText x="28" y="18" fontSize="8" fontWeight="bold" fill="rgba(255,255,255,0.65)" textAnchor="end">100%</SvgText>
+                                  <SvgText x="28" y="35.5" fontSize="8" fontWeight="bold" fill="rgba(255,255,255,0.4)" textAnchor="end">50%</SvgText>
+                                  <SvgText x="28" y="53" fontSize="8" fontWeight="bold" fill="rgba(255,255,255,0.65)" textAnchor="end">0%</SvgText>
+                                  {/* Vertical separator line between axis and scrolling curve */}
+                                  <Path d="M 34 10 L 34 75" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+                                </Svg>
+                              </View>
 
-                                <Path d={`M 18 55 L ${svgWidth - 18} 55`} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="3,3" />
+                              {/* Horizontally Scrollable Plot Area */}
+                              <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={{ paddingRight: 10 }}
+                                className="flex-1"
+                              >
+                                <View className="items-center justify-center">
+                                  <Svg height={svgHeight} width={svgWidth} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
+                                    <Defs>
+                                      <LinearGradient id="cardRainGrad" x1="0" y1="0" x2="0" y2="1">
+                                        <Stop offset="0%" stopColor="white" stopOpacity="0.35" />
+                                        <Stop offset="100%" stopColor="white" stopOpacity="0.0" />
+                                      </LinearGradient>
+                                    </Defs>
 
-                                <Path d={fillPathD} fill="url(#cardRainGrad)" />
+                                    <Path d={`M 18 50 L ${svgWidth - 18} 50`} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="3,3" />
 
-                                <Path
-                                  d={linePathD}
-                                  fill="none"
-                                  stroke="white"
-                                  strokeWidth="2.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
+                                    <Path d={fillPathD} fill="url(#cardRainGrad)" />
 
-                                {/* FIXED: Replaced React.Fragment with standard SVG <G> grouping element. This completely prevents silent render crashes / blank screen bugs inside SVG map renderers! */}
-                                {points.map((p, idx) => (
-                                  <G key={idx}>
-                                    <Circle cx={p.x} cy={p.y} r="3" fill="white" stroke="#398871" strokeWidth="1.5" />
-                                    <SvgText
-                                      x={p.x}
-                                      y={p.y - 6}
-                                      fontSize="7.5"
-                                      fontWeight="bold"
-                                      fill="white"
-                                      textAnchor="middle"
-                                    >
-                                      {p.prob}%
-                                    </SvgText>
-                                  </G>
-                                ))}
-                              </Svg>
-                            </View>
+                                    <Path
+                                      d={linePathD}
+                                      fill="none"
+                                      stroke="white"
+                                      strokeWidth="2.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
 
-                            {/* HOURLY Axis labels at the bottom of the graph */}
-                            <View className="flex-row justify-between px-1 mt-1">
-                              {hourlyGraphData.map((item, idx) => {
-                                // Shorten time label (e.g., "12:30 AM" -> "12:30") to fit comfortably
-                                const shortTime = item.time.replace(" AM", "").replace(" PM", "");
-                                return (
-                                  <Text
-                                    key={idx}
-                                    style={{ fontFamily: "Montserrat_600SemiBold", fontSize: 8 }}
-                                    className="w-8 text-center text-white/70"
-                                  >
-                                    {shortTime}
-                                  </Text>
-                                );
-                              })}
+                                    {/* Render hourly dots, probability values, and time stamps directly inside the SVG */}
+                                    {points.map((p, idx) => {
+                                      // Split "12:30 AM" into "12:30" (Time) and "AM" (Descriptor) to draw them stacked in two lines
+                                      const timeParts = p.label.split(" ");
+                                      const timeOnly = timeParts[0] || "";
+                                      const ampmOnly = timeParts[1] || "";
+
+                                      return (
+                                        <G key={idx}>
+                                          <Circle cx={p.x} cy={p.y} r="3" fill="white" stroke="#398871" strokeWidth="1.5" />
+                                          <SvgText
+                                            x={p.x}
+                                            y={p.y - 6}
+                                            fontSize="7.5"
+                                            fontWeight="bold"
+                                            fill="white"
+                                            textAnchor="middle"
+                                          >
+                                            {p.prob}%
+                                          </SvgText>
+
+                                          {/* Line 1: TIME (e.g. "12:30") */}
+                                          <SvgText
+                                            x={p.x}
+                                            y="64"
+                                            fontSize="8"
+                                            fontWeight="700"
+                                            fill="rgba(255, 255, 255, 0.9)"
+                                            textAnchor="middle"
+                                          >
+                                            {timeOnly}
+                                          </SvgText>
+
+                                          {/* Line 2: AM / PM (e.g. "AM") */}
+                                          <SvgText
+                                            x={p.x}
+                                            y="74"
+                                            fontSize="7"
+                                            fontWeight="600"
+                                            fill="rgba(255, 255, 255, 0.6)"
+                                            textAnchor="middle"
+                                          >
+                                            {ampmOnly}
+                                          </SvgText>
+                                        </G>
+                                      );
+                                    })}
+                                  </Svg>
+                                </View>
+                              </ScrollView>
                             </View>
                           </View>
                         </>
