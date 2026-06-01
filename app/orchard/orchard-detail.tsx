@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+
 import {
   SafeAreaView,
   ScrollView,
@@ -89,7 +90,7 @@ function AdvisoryIcon() {
 // Custom mathematical interpolation engine to convert 3-hour forecasts into 1-hour increments
 function interpolateToHourly(threeHourList: any[]) {
   if (!threeHourList || threeHourList.length === 0) return [];
-  
+
   const parseToMinutes = (timeStr: string) => {
     const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
     if (!match) return 0;
@@ -102,72 +103,70 @@ function interpolateToHourly(threeHourList: any[]) {
     }
     return h * 60 + m;
   };
-
   // Check if the list is already in 1-hour intervals (e.g. mock data)
   if (threeHourList.length > 1) {
     const min0 = parseToMinutes(threeHourList[0].time);
     const min1 = parseToMinutes(threeHourList[1].time);
     let diff = min1 - min0;
     if (diff < 0) diff += 24 * 60; // Handle midnight wrap-around
-    
+
     // If interval is already ~1 hour, skip the interpolation block to avoid duplicates!
     if (diff > 45 && diff < 75) {
       console.log("🌦️ [OpenWeather] Hourly list is already in 1-hour intervals. Skipping interpolation.");
       return threeHourList;
     }
   }
-
   const interpolated: any[] = [];
-  
+
   for (let i = 0; i < threeHourList.length - 1; i++) {
     const cur = threeHourList[i];
     const nxt = threeHourList[i + 1];
-    
+
     const minCurrent = parseToMinutes(cur.time);
     const minNext = parseToMinutes(nxt.time);
     let diffMinutes = minNext - minCurrent;
     if (diffMinutes < 0) diffMinutes += 24 * 60; // Midnight wrap-around
-    
+
     const diffHours = Math.round(diffMinutes / 60);
-    
+
     // If the distance is already 1 hour, just push current item and skip interpolation
     if (diffHours <= 1) {
       interpolated.push(cur);
       continue;
     }
-    
+
     // Parse the start time (e.g., "12:30 AM" or "01:30 PM")
     const timeMatch = cur.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
     if (!timeMatch) {
       interpolated.push(cur);
       continue;
     }
-    
+
     let hour24 = parseInt(timeMatch[1]);
     const min = parseInt(timeMatch[2]);
     const ampm = timeMatch[3];
-    
+
     if (ampm) {
       if (ampm.toUpperCase() === "PM" && hour24 < 12) hour24 += 12;
       if (ampm.toUpperCase() === "AM" && hour24 === 12) hour24 = 0;
     }
-    
+
     // Generate steps of 1-hour increments dynamically based on diffHours
-    for (let step = 0; step < diffHours; step++) {
+    for (let step = 0; step < 3; step++) {
       const currentHour24 = (hour24 + step) % 24;
-      
+
       // Convert back to clean 12-hour format without leading zeros (e.g., "1:30 AM")
       const displayHour = currentHour24 % 12 === 0 ? 12 : currentHour24 % 12;
       const displayAmpm = currentHour24 >= 12 ? "PM" : "AM";
       const stepTimeStr = `${displayHour}:${String(min).padStart(2, '0')} ${displayAmpm}`;
-      
+
       const ratio = step / diffHours;
       // Smooth linear interpolation of temperatures and rain probabilities
       const interpolatedTemp = cur.temp + ratio * (nxt.temp - cur.temp);
       const interpolatedProb = Math.round(cur.rainProb + ratio * (nxt.rainProb - cur.rainProb));
       const icon = ratio > 0.5 ? nxt.icon : cur.icon;
       const desc = ratio > 0.5 ? nxt.desc : cur.desc;
-      
+
       interpolated.push({
         time: stepTimeStr,
         temp: parseFloat(interpolatedTemp.toFixed(1)),
@@ -178,21 +177,19 @@ function interpolateToHourly(threeHourList: any[]) {
       });
     }
   }
-  
+
   // Add final item
   if (threeHourList.length > 0) {
     interpolated.push(threeHourList[threeHourList.length - 1]);
   }
-  
+
   return interpolated;
 }
 
 export default function OrchardDetailScreen() {
   const router = useRouter();
   const { orchard } = useLocalSearchParams();
-
   let orchardData = null;
-
   try {
     if (orchard) {
       orchardData =
@@ -203,14 +200,11 @@ export default function OrchardDetailScreen() {
   } catch (e) {
     orchardData = null;
   }
-
   const isDark = useColorScheme() === "dark";
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"home" | "info">("home");
-
   // WEATHER SUB-TABS: Today, Tomorrow, Next Week (Next 16 Days)
   const [weatherSubTab, setWeatherSubTab] = useState<"today" | "tomorrow" | "nextWeek">("today");
-
   // Weather States
   const [loading, setLoading] = useState(false);
   const [weatherError, setWeatherError] = useState<string | null>(null);
@@ -222,7 +216,6 @@ export default function OrchardDetailScreen() {
     hourly: MOCK_HOURLY,
     daily: MOCK_DAILY_16_DAYS,
   });
-
   const [expandedDays, setExpandedDays] = useState(false); // Toggle to show all 16 days
 
   const heroImage = selectedImage || orchardData?.image || null;
@@ -232,35 +225,33 @@ export default function OrchardDetailScreen() {
   useEffect(() => {
     async function fetchWeather() {
       const originalLocation = orchardData?.location || "Nishat";
-      
+
       // Clean up the location string (take first part before any comma/slash)
       const location = originalLocation.split(/[,/]/)[0].trim() || "Nishat";
-
       // Foolproof check: if key is unconfigured, return and show simulated weather data
       if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY.includes("YOUR_") || OPENWEATHER_API_KEY.trim() === "" || OPENWEATHER_API_KEY.length < 15) {
-        console.log(" 🌦️ [OpenWeather] No API Key set. Rendering fallback mock weather data.");
+        console.log("🌦️ [OpenWeather] No API Key set. Rendering fallback mock weather data.");
         setWeatherError("API Key is unconfigured. Showing simulated weather data.");
         return;
       }
-
       setLoading(true);
       setWeatherError(null);
       try {
-        console.log(` 🌦️ [OpenWeather] Direct fetching 5-day forecast for city: "${location}"...`);
-        
+        console.log(`🌦️ [OpenWeather] Direct fetching 5-day forecast for city: "${location}"...`);
+
         // Fetch directly using City Name (eliminating geocoding extra step entirely!)
         let forecastRes = await fetch(
           `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(location)}&units=metric&appid=${OPENWEATHER_API_KEY}`
         );
-        
+
         // 401: Invalid key / non-activated key
         if (forecastRes.status === 401) {
           throw new Error("Invalid API Key (401 Unauthorized). Note: Newly created OpenWeather keys take up to 2-3 hours to activate.");
         }
-        
+
         // 404: City name not found. Fallback to Srinagar.
         if (forecastRes.status === 404) {
-          console.warn(` 🌦️ [OpenWeather] City "${location}" not found. Trying default: "Srinagar"...`);
+          console.warn(`🌦️ [OpenWeather] City "${location}" not found. Trying default: "Srinagar"...`);
           forecastRes = await fetch(
             `https://api.openweathermap.org/data/2.5/forecast?q=Srinagar&units=metric&appid=${OPENWEATHER_API_KEY}`
           );
@@ -268,33 +259,29 @@ export default function OrchardDetailScreen() {
             throw new Error(`Default city Srinagar fallback failed (status ${forecastRes.status})`);
           }
         }
-
         if (!forecastRes.ok) {
           throw new Error(`API request failed with status ${forecastRes.status}`);
         }
-
         const forecastData = await forecastRes.json();
-
         if (forecastData && forecastData.list) {
-          console.log(` 🌦️ [OpenWeather] Forecast fetched successfully! Parsing...`);
-          
+          console.log(`🌦️ [OpenWeather] Forecast fetched successfully! Parsing...`);
+
           // Get the resolved city name from the API response
           const resolvedName = forecastData.city?.name || location;
           setResolvedCity(resolvedName);
-          
+
           // Map Hourly Forecast (next 16 steps = 48 hours to cover Today & Tomorrow full scrollable intervals)
           const mappedHourly = forecastData.list.slice(0, 16).map((item: any, idx: number) => {
             const date = new Date(item.dt * 1000);
-            
+
             // Format time without leading zeros (e.g. "1:30 AM")
             const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute:'2-digit' });
-            
+
             let iconName = "partly-sunny";
             if (item.weather[0].main === "Rain") iconName = "rainy";
             else if (item.weather[0].main === "Clear") iconName = "sunny";
             else if (item.weather[0].main === "Clouds") iconName = "cloudy";
             else if (item.weather[0].main === "Thunderstorm") iconName = "thunderstorm";
-
             return {
               time: timeStr,
               temp: item.main.temp,
@@ -303,13 +290,12 @@ export default function OrchardDetailScreen() {
               rainVol: item.rain ? `${item.rain["3h"] || 0}mm` : undefined,
             };
           });
-
           // Map Daily Forecast (Combine 3-hour chunks into days)
           const dailyMap: { [key: string]: any } = {};
           forecastData.list.forEach((item: any) => {
             const date = new Date(item.dt * 1000);
             const dayStr = date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-            
+
             if (!dailyMap[dayStr]) {
               dailyMap[dayStr] = {
                 temps: [],
@@ -330,19 +316,17 @@ export default function OrchardDetailScreen() {
               dailyMap[dayStr].rainVols += item.rain["3h"];
             }
           });
-
           const mappedDaily = Object.keys(dailyMap).map((dayKey, idx) => {
             const temps = dailyMap[dayKey].temps;
             const maxTemp = Math.max(...temps);
             const minTemp = Math.min(...temps);
             const rainProb = Math.round(Math.max(...dailyMap[dayKey].rainProbs) * 100);
             const rainVolSum = Math.round(dailyMap[dayKey].rainVols);
-            
+
             // Averages
             const avgHumidity = Math.round(dailyMap[dayKey].humidityList.reduce((a:any, b:any)=>a+b, 0) / dailyMap[dayKey].humidityList.length);
             const avgWind = (dailyMap[dayKey].windList.reduce((a:any, b:any)=>a+b, 0) / dailyMap[dayKey].windList.length * 3.6).toFixed(2); // Convert m/s to km/h
             const avgClouds = Math.round(dailyMap[dayKey].cloudsList.reduce((a:any, b:any)=>a+b, 0) / dailyMap[dayKey].cloudsList.length);
-
             let iconName = "partly-sunny";
             let desc = "Partly Cloudy";
             const weather = dailyMap[dayKey].weatherMain;
@@ -350,7 +334,6 @@ export default function OrchardDetailScreen() {
             else if (weather === "Clear") { iconName = "sunny"; desc = "Sunny"; }
             else if (weather === "Clouds") { iconName = "cloudy"; desc = "Clouds"; }
             else if (weather === "Thunderstorm") { iconName = "thunderstorm"; desc = "Stormy"; }
-
             return {
               day: idx === 0 ? "Today" : idx === 1 ? "Tomorrow" : dayKey,
               desc,
@@ -366,7 +349,6 @@ export default function OrchardDetailScreen() {
               feelsLike: `${Math.round(maxTemp)}°`,
             };
           });
-
           // Extrapolate remaining days to complete 16 full slots
           const finalDailyList = [...mappedDaily];
           for (let i = finalDailyList.length; i < 16; i++) {
@@ -374,34 +356,31 @@ export default function OrchardDetailScreen() {
             const dateOffset = new Date();
             dateOffset.setDate(dateOffset.getDate() + i);
             const dayStr = dateOffset.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-            
+
             finalDailyList.push({
               ...baseMock,
               day: dayStr,
             });
           }
-
           setWeatherData({
             hourly: mappedHourly,
             daily: finalDailyList,
           });
-          console.log(" 🌦️ [OpenWeather] State successfully updated with real API data.");
+          console.log("🌦️ [OpenWeather] State successfully updated with real API data.");
         }
       } catch (err: any) {
-        console.error(" 🌦️ [OpenWeather] Error: ", err.message);
+        console.error("🌦️ [OpenWeather] Error: ", err.message);
         setWeatherError(err.message || "Failed to fetch weather.");
       } finally {
         setLoading(false);
       }
     }
-
     fetchWeather();
   }, [orchardData?.location]);
 
   const handleUpload = async () => {
     const permission =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
-
     if (!permission.granted) {
       Alert.alert(
         "Permission required",
@@ -409,13 +388,11 @@ export default function OrchardDetailScreen() {
       );
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,
       allowsEditing: true,
     });
-
     if (!result.canceled && result.assets?.length > 0) {
       setSelectedImage(result.assets[0].uri);
     }
@@ -425,14 +402,11 @@ export default function OrchardDetailScreen() {
   const dailyForecastList = (weatherData.daily && weatherData.daily.length > 0)
     ? weatherData.daily
     : MOCK_DAILY_16_DAYS;
-
   const hourlyForecastList = (weatherData.hourly && weatherData.hourly.length > 0)
     ? weatherData.hourly
     : MOCK_HOURLY;
-
   const visibleDays = expandedDays ? dailyForecastList : dailyForecastList.slice(0, 7);
   const rainChartData = dailyForecastList.slice(0, 7);
-
   const totalWeeklyRain = rainChartData.reduce((sum, item) => {
     const match = String(item.rainVol).match(/(\d+(\.\d+)?)/);
     return sum + (match ? parseFloat(match[0]) : 0);
@@ -445,7 +419,6 @@ export default function OrchardDetailScreen() {
 
   // ─── INTERPOLATE TO TRUE 1-HOUR INCREMENTS ───
   const interpolatedHourlyList = interpolateToHourly(hourlyForecastList);
-
   // Pick correct active hourly list dynamically (Today's 24 hours or Tomorrow's 24 hours in 1-hour increments!)
   // Slicing 24 elements represents exactly 24 full hours of 1-hour interval data!
   const activeHourlyList = (weatherSubTab === "tomorrow" && interpolatedHourlyList.length >= 48)
@@ -455,7 +428,7 @@ export default function OrchardDetailScreen() {
   // ─── HOURLY-BASED RAIN INTELLIGENCE GRAPH COORDINATES ───
   // Using the exact 24 1-hour points to plot the graph dynamically!
   const hourlyGraphData = activeHourlyList;
-  
+
   const svgWidth = 840; // Wider width (35px per hour step * 24 nodes) to allow smooth horizontal scrolling
   const svgHeight = 85; // Sized perfectly to fit the stacked dual-line AM/PM time tags
   const points = hourlyGraphData.map((item, idx) => {
@@ -465,13 +438,11 @@ export default function OrchardDetailScreen() {
     const y = 45 - (prob / 100) * 32; // Calibrated y-coordinate range
     return { x, y, prob, vol: item.rainVol || "0mm", label: item.time };
   });
-
   const fillPathD = `${points.reduce((acc, p, idx) => {
-    return acc + (idx === 0 ? `M ${p.x} ${p.y}` : ` L ${p.x} ${p.y}`);
+    return acc + (idx === 0 ? `M ${p.x} ${p.y}` :  `L ${p.x} ${p.y}`);
   }, "")} L ${points[points.length - 1].x} 55 L ${points[0].x} 55 Z`;
-
   const linePathD = points.reduce((acc, p, idx) => {
-    return acc + (idx === 0 ? `M ${p.x} ${p.y}` : ` L ${p.x} ${p.y}`);
+    return acc + (idx === 0 ? `M ${p.x} ${p.y}` :  `L ${p.x} ${p.y}`);
   }, "");
 
   return (
@@ -519,15 +490,6 @@ export default function OrchardDetailScreen() {
                 className="flex-1"
               >
                 <View className="flex-1 bg-black/25 px-5 pt-5 pb-6 justify-end relative">
-                  
-                  {/* Floating settings gear icon */}
-                  <TouchableOpacity
-                    className="absolute right-5 top-[35%] w-12 h-12 rounded-full bg-[#1e88e5] items-center justify-center shadow-lg"
-                    activeOpacity={0.85}
-                  >
-                    <Ionicons name="settings-sharp" size={24} color="white" />
-                  </TouchableOpacity>
-
                   <View className="flex-row items-end justify-between">
                     <View className="flex-1 pr-4">
                       <Text
@@ -537,7 +499,6 @@ export default function OrchardDetailScreen() {
                       >
                         {orchardData?.name || "Orchard Name"}
                       </Text>
-
                       <View className="flex-row items-center mt-1">
                         <Ionicons
                           name="location-outline"
@@ -552,7 +513,6 @@ export default function OrchardDetailScreen() {
                         </Text>
                       </View>
                     </View>
-
                     <TouchableOpacity
                       onPress={handleUpload}
                       className="px-4 py-2 rounded-full bg-white/95 border border-white/40"
@@ -569,14 +529,6 @@ export default function OrchardDetailScreen() {
               </ImageBackground>
             ) : (
               <View className="flex-1 px-5 pt-5 pb-6 justify-between relative">
-                {/* Floating settings gear icon even if there's no custom background */}
-                <TouchableOpacity
-                  className="absolute right-5 top-[35%] w-12 h-12 rounded-full bg-[#1e88e5] items-center justify-center shadow-lg"
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="settings-sharp" size={24} color="white" />
-                </TouchableOpacity>
-
                 <View className="items-center flex-1 justify-center">
                   <TouchableOpacity
                     onPress={handleUpload}
@@ -606,6 +558,73 @@ export default function OrchardDetailScreen() {
             )}
           </View>
 
+          {/* ─── DEGREE DAYS TILE ─── */}
+          <View
+            className={`mt-4 rounded-2xl border px-5 py-4 flex-row items-center justify-between ${
+              isDark
+                ? "bg-slate-900 border-slate-800"
+                : "bg-white border-[#e2f0d9]"
+            }`}
+            style={{
+              shadowColor: isDark ? "#000" : "#6b8f71",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <View className="flex-row items-center">
+              <View
+                className={`w-10 h-10 rounded-full items-center justify-center mr-3.5 ${
+                  isDark ? "bg-amber-950/40" : "bg-amber-50"
+                }`}
+              >
+                <Ionicons name="thermometer-outline" size={20} color={isDark ? "#fbbf24" : "#d97706"} />
+              </View>
+              <View>
+                <Text
+                  style={{ fontFamily: "Montserrat_500Medium" }}
+                  className={`text-[10px] uppercase tracking-[1.2px] ${
+                    isDark ? "text-slate-400" : "text-green-900/50"
+                  }`}
+                >
+                  Growing Degree Days
+                </Text>
+                <Text
+                  style={{ fontFamily: "Montserrat_700Bold" }}
+                  className={`text-2xl font-bold mt-0.5 ${
+                    isDark ? "text-white" : "text-[#1b3d2f]"
+                  }`}
+                >
+                  222.2
+                  <Text
+                    style={{ fontFamily: "Montserrat_500Medium" }}
+                    className={`text-sm ${
+                      isDark ? "text-slate-400" : "text-[#6b8f71]"
+                    }`}
+                  >
+                    {" "}°C
+                  </Text>
+                </Text>
+              </View>
+            </View>
+            <View
+              className={`rounded-full px-3 py-1.5 ${
+                isDark ? "bg-emerald-950/30" : "bg-[#e8f5e9]"
+              }`}
+            >
+              <View className="flex-row items-center">
+                <View className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
+                <Text
+                  style={{ fontFamily: "Montserrat_600SemiBold", fontSize: 10 }}
+                  className={isDark ? "text-emerald-400" : "text-[#2d8a56]"}
+                >
+                  Active Growing
+                </Text>
+              </View>
+            </View>
+          </View>
+
           {/* TABS SELECTOR */}
           <View className="mt-4 flex-row bg-white/70 dark:bg-slate-800 rounded-2xl p-1">
             <TouchableOpacity
@@ -627,7 +646,6 @@ export default function OrchardDetailScreen() {
                 Home
               </Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               onPress={() => setActiveTab("info")}
               className="flex-1 py-3 rounded-xl items-center"
@@ -653,7 +671,7 @@ export default function OrchardDetailScreen() {
           <View className="mt-4">
             {activeTab === "home" ? (
               <View className="flex-1 space-y-4">
-                
+
                 {/* --- ORCHARD ADVISORY COMPONENT --- */}
                 <View>
                   <View className="flex-row items-center mb-2">
@@ -667,7 +685,6 @@ export default function OrchardDetailScreen() {
                       ORCHARD ADVISORY
                     </Text>
                   </View>
-
                   <View
                     className={`rounded-xl border p-3 flex-row items-start ${
                       isDark
@@ -679,7 +696,6 @@ export default function OrchardDetailScreen() {
                     <View className="mr-3 justify-start items-center pt-1">
                       <AdvisoryIcon />
                     </View>
-
                     <View className="flex-1">
                       <View className="flex-row items-center justify-between pb-1.5">
                         <Text
@@ -690,7 +706,6 @@ export default function OrchardDetailScreen() {
                         >
                           Calcium Spray
                         </Text>
-
                         <View className="flex-row items-center bg-[#fffbeb] dark:bg-amber-950/20 border border-[#fde68a] dark:border-amber-900/30 px-2.5 py-0.5 rounded-full">
                           <Ionicons name="time-outline" size={11} color="#ca6a24" />
                           <Text
@@ -704,7 +719,6 @@ export default function OrchardDetailScreen() {
                           </Text>
                         </View>
                       </View>
-
                       <View className="mt-1">
                         <View
                           className={`flex-row items-center py-2 border-t ${
@@ -718,10 +732,9 @@ export default function OrchardDetailScreen() {
                               isDark ? "text-white/70" : "text-slate-600"
                             }`}
                           >
-                            Rains On 16th &amp; 17th
+                            Rains On 16th & 17th
                           </Text>
                         </View>
-
                         <View
                           className={`flex-row items-center py-2 border-t ${
                             isDark ? "border-slate-800" : "border-[#f1f5f9]"
@@ -734,7 +747,7 @@ export default function OrchardDetailScreen() {
                               isDark ? "text-white/70" : "text-slate-600"
                             }`}
                           >
-                            Scout For Aphids &amp; Mites
+                            Scout For Aphids & Mites
                           </Text>
                         </View>
                       </View>
@@ -762,7 +775,7 @@ export default function OrchardDetailScreen() {
 
                 {/* ─── NEW HIGH-FIDELITY WEATHER WIDGET SECTION (Matches Photo exactly) ─── */}
                 <View className="mt-2">
-                  
+
                   {/* WEATHER SUB-TABS: Today, Tomorrow, Next 16 Days (Matches Next 16 Days exactly) */}
                   <View className="flex-row items-center justify-between px-2 mb-3 mt-1">
                     <TouchableOpacity
@@ -785,7 +798,6 @@ export default function OrchardDetailScreen() {
                         Today
                       </Text>
                     </TouchableOpacity>
-
                     <TouchableOpacity
                       onPress={() => setWeatherSubTab("tomorrow")}
                       className="px-4 py-1.5 rounded-full"
@@ -806,7 +818,6 @@ export default function OrchardDetailScreen() {
                         Tomorrow
                       </Text>
                     </TouchableOpacity>
-
                     <TouchableOpacity
                       onPress={() => setWeatherSubTab("nextWeek")}
                       className="px-4 py-1.5 rounded-full"
@@ -831,7 +842,7 @@ export default function OrchardDetailScreen() {
 
                   {/* MAIN GRADIENT WEATHER CARD */}
                   <View className="bg-[#469e80] dark:bg-slate-900 rounded-[28px] overflow-hidden border border-[#5cb895]/20 dark:border-slate-800 shadow-md relative">
-                    
+
                     {/* SVG Gradient Background */}
                     <View className="absolute inset-0">
                       <Svg height="100%" width="100%">
@@ -847,7 +858,7 @@ export default function OrchardDetailScreen() {
 
                     {/* Card Content Overlay */}
                     <View className="p-5 relative">
-                      
+
                       {/* CARD CONTENT HEADER */}
                       <View className="items-center">
                         <View className="flex-row items-center justify-center">
@@ -859,7 +870,6 @@ export default function OrchardDetailScreen() {
                             {resolvedCity}
                           </Text>
                         </View>
-
                         <Text
                           style={{ fontFamily: "Montserrat_700Bold" }}
                           className="text-white text-[23px] font-bold mt-1"
@@ -870,7 +880,6 @@ export default function OrchardDetailScreen() {
                             ? "Tomorrow's Weather"
                             : "16-Day Forecast"}
                         </Text>
-
                         <Text
                           style={{ fontFamily: "Montserrat_500Medium" }}
                           className="text-white/80 text-[10px] mt-0.5"
@@ -908,7 +917,6 @@ export default function OrchardDetailScreen() {
                                 {activeForecast?.desc || "Clouds"}
                               </Text>
                             </View>
-
                             <Text
                               style={{ fontFamily: "Montserrat_700Bold", fontSize: 44, lineHeight: 50 }}
                               className="text-white font-extrabold"
@@ -931,7 +939,6 @@ export default function OrchardDetailScreen() {
                                   <Text style={{ fontFamily: "Montserrat_700Bold" }} className="text-white text-[11px] font-bold mt-0.5">{activeForecast?.feelsLike || "30.3°C"}</Text>
                                 </View>
                               </View>
-
                               {/* Humidity */}
                               <View className="flex-row items-center flex-1 py-1 px-1">
                                 <View className="w-7 h-7 rounded-full bg-white/15 items-center justify-center mr-2">
@@ -942,7 +949,6 @@ export default function OrchardDetailScreen() {
                                   <Text style={{ fontFamily: "Montserrat_700Bold" }} className="text-white text-[11px] font-bold mt-0.5">{activeForecast?.humidity || "68"}%</Text>
                                 </View>
                               </View>
-
                               {/* Clouds */}
                               <View className="flex-row items-center flex-1 py-1 px-1">
                                 <View className="w-7 h-7 rounded-full bg-white/15 items-center justify-center mr-2">
@@ -954,7 +960,6 @@ export default function OrchardDetailScreen() {
                                 </View>
                               </View>
                             </View>
-
                             {/* Row 2 */}
                             <View className="flex-row justify-between">
                               {/* Dew Point */}
@@ -967,7 +972,6 @@ export default function OrchardDetailScreen() {
                                   <Text style={{ fontFamily: "Montserrat_700Bold" }} className="text-white text-[11px] font-bold mt-0.5">{activeForecast?.dewPoint || "20.47°"}</Text>
                                 </View>
                               </View>
-
                               {/* Wind */}
                               <View className="flex-row items-center flex-1 py-1 px-1">
                                 <View className="w-7 h-7 rounded-full bg-white/15 items-center justify-center mr-2">
@@ -978,7 +982,6 @@ export default function OrchardDetailScreen() {
                                   <Text style={{ fontFamily: "Montserrat_700Bold" }} className="text-white text-[11px] font-bold mt-0.5">{activeForecast?.wind || "1.93KM/Hr"}</Text>
                                 </View>
                               </View>
-
                               {/* Air Pressure */}
                               <View className="flex-row items-center flex-1 py-1 px-1">
                                 <View className="w-7 h-7 rounded-full bg-white/15 items-center justify-center mr-2">
@@ -1027,22 +1030,20 @@ export default function OrchardDetailScreen() {
                               style={{ fontFamily: "Montserrat_700Bold", fontSize: 9, letterSpacing: 0.8 }}
                               className="text-white/80 uppercase mb-2"
                             >
-                                                       Rain Probability Intelligence
+                             Rain Probability Intelligence
                             </Text>
-                            
+
                             {/* --- FIXED Y-AXIS OVERLAY + SCROLLABLE GRAPH CONTAINER --- */}
                             <View className="flex-row items-center mt-1">
                               {/* Fixed Stationary Y-Axis Panel (Always visible on the left) */}
                               <View style={{ width: 35 }}>
                                 <Svg height={svgHeight} width={35}>
                                   <SvgText x="28" y="18" fontSize="8" fontWeight="bold" fill="rgba(255,255,255,0.65)" textAnchor="end">100%</SvgText>
-                                  <SvgText x="28" y="35.5" fontSize="8" fontWeight="bold" fill="rgba(255,255,255,0.4)" textAnchor="end">50%</SvgText>
                                   <SvgText x="28" y="53" fontSize="8" fontWeight="bold" fill="rgba(255,255,255,0.65)" textAnchor="end">0%</SvgText>
                                   {/* Vertical separator line between axis and scrolling curve */}
                                   <Path d="M 34 10 L 34 75" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
                                 </Svg>
                               </View>
-
                               {/* Horizontally Scrollable Plot Area */}
                               <ScrollView
                                 horizontal
@@ -1058,11 +1059,8 @@ export default function OrchardDetailScreen() {
                                         <Stop offset="100%" stopColor="white" stopOpacity="0.0" />
                                       </LinearGradient>
                                     </Defs>
-
                                     <Path d={`M 18 50 L ${svgWidth - 18} 50`} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="3,3" />
-
                                     <Path d={fillPathD} fill="url(#cardRainGrad)" />
-
                                     <Path
                                       d={linePathD}
                                       fill="none"
@@ -1071,14 +1069,12 @@ export default function OrchardDetailScreen() {
                                       strokeLinecap="round"
                                       strokeLinejoin="round"
                                     />
-
                                     {/* Render hourly dots, probability values, and time stamps directly inside the SVG */}
                                     {points.map((p, idx) => {
                                       // Split "12:30 AM" into "12:30" (Time) and "AM" (Descriptor) to draw them stacked in two lines
                                       const timeParts = p.label.split(" ");
                                       const timeOnly = timeParts[0] || "";
                                       const ampmOnly = timeParts[1] || "";
-
                                       return (
                                         <G key={idx}>
                                           <Circle cx={p.x} cy={p.y} r="3" fill="white" stroke="#398871" strokeWidth="1.5" />
@@ -1092,7 +1088,6 @@ export default function OrchardDetailScreen() {
                                           >
                                             {p.prob}%
                                           </SvgText>
-
                                           {/* Line 1: TIME (e.g. "12:30") */}
                                           <SvgText
                                             x={p.x}
@@ -1104,7 +1099,6 @@ export default function OrchardDetailScreen() {
                                           >
                                             {timeOnly}
                                           </SvgText>
-
                                           {/* Line 2: AM / PM (e.g. "AM") */}
                                           <SvgText
                                             x={p.x}
@@ -1145,7 +1139,6 @@ export default function OrchardDetailScreen() {
                                     {item.desc}
                                   </Text>
                                 </View>
-
                                 {/* Prob Segmented Mini Bar (Unified style inside card!) */}
                                 <View className="w-24 flex-row items-center justify-center mr-3">
                                   <Ionicons name="rainy" size={12} color="white" />
@@ -1169,7 +1162,6 @@ export default function OrchardDetailScreen() {
                                     {item.rainProb}%
                                   </Text>
                                 </View>
-
                                 <View className="flex-row items-center justify-end w-16">
                                   <Ionicons
                                     name={
@@ -1194,7 +1186,6 @@ export default function OrchardDetailScreen() {
                               </View>
                             ))}
                           </View>
-
                           <TouchableOpacity
                             onPress={() => setExpandedDays(!expandedDays)}
                             className="border-t border-white/10 pt-3 mt-1 items-center justify-center flex-row"
@@ -1217,33 +1208,146 @@ export default function OrchardDetailScreen() {
                     </View>
                   </View>
                 </View>
-
               </View>
             ) : (
-              <View>
-                <Text
-                  className={`text-lg font-bold ${
-                    isDark ? "text-white" : "text-black"
-                  }`}
-                >
-                  Orchard Info
-                </Text>
+              /* --- STUNNING, COHESIVE ORCHARD INFO TAB DASHBOARD --- */
+              <View className="flex-1 space-y-4">
 
-                <Text
-                  className={`mt-2 ${
-                    isDark ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  Name: {orchardData?.name}
-                </Text>
+                {/* Section Header: Orchard Specifications */}
+                <View className="flex-row items-center mb-1">
+                  <View className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2" />
+                  <Text
+                    style={{ fontFamily: "Montserrat_700Bold" }}
+                    className={`text-[10px] tracking-[1.2px] uppercase ${
+                      isDark ? "text-white/60" : "text-green-900/60"
+                    }`}
+                  >
+                    ORCHARD SPECIFICATIONS
+                  </Text>
+                </View>
 
-                <Text
-                  className={`mt-1 ${
-                    isDark ? "text-gray-300" : "text-gray-700"
+                {/* Primary Specifications Card (Stacked layout) */}
+                <View
+                  className={`rounded-[24px] border p-5 ${
+                    isDark
+                      ? "bg-slate-900 border-slate-800"
+                      : "bg-white border-[#e2f0d9]"
                   }`}
                 >
-                  Location: {orchardData?.location}
-                </Text>
+                  {/* 1. Orchard Name */}
+                  <View className="flex-row items-center pb-3 border-b border-[#f1f5f9] dark:border-slate-800/60">
+                    <View className="w-9 h-9 rounded-full bg-[#e8f5e9] dark:bg-emerald-950/30 items-center justify-center mr-3.5">
+                      <Ionicons name="leaf-outline" size={16} color="#469e80" />
+                    </View>
+                    <View className="flex-1">
+                      <Text style={{ fontFamily: "Montserrat_500Medium" }} className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Orchard Name</Text>
+                      <Text
+                        style={{ fontFamily: "Montserrat_600SemiBold" }}
+                        className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5"
+                      >
+                        {orchardData?.name || "Valley Orchard"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 2. Crop Type */}
+                  <View className="flex-row items-center py-3 border-b border-[#f1f5f9] dark:border-slate-800/60">
+                    <View className="w-9 h-9 rounded-full bg-[#e8f5e9] dark:bg-emerald-950/30 items-center justify-center mr-3.5">
+                      <Ionicons name="basket-outline" size={16} color="#469e80" />
+                    </View>
+                    <View className="flex-1">
+                      <Text style={{ fontFamily: "Montserrat_500Medium" }} className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Crop Type</Text>
+                      <Text
+                        style={{ fontFamily: "Montserrat_600SemiBold" }}
+                        className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5"
+                      >
+                        {orchardData?.orchardType || "Apple Orchard"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 3. Variety */}
+                  <View className="flex-row items-center py-3 border-b border-[#f1f5f9] dark:border-slate-800/60">
+                    <View className="w-9 h-9 rounded-full bg-[#e8f5e9] dark:bg-emerald-950/30 items-center justify-center mr-3.5">
+                      <Ionicons name="git-branch-outline" size={16} color="#469e80" />
+                    </View>
+                    <View className="flex-1">
+                      <Text style={{ fontFamily: "Montserrat_500Medium" }} className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Variety</Text>
+                      <Text
+                        style={{ fontFamily: "Montserrat_600SemiBold" }}
+                        className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5"
+                      >
+                        {orchardData?.variety || "Honeycrisp, Gala"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 4. Total Area */}
+                  <View className="flex-row items-center py-3 border-b border-[#f1f5f9] dark:border-slate-800/60">
+                    <View className="w-9 h-9 rounded-full bg-[#e8f5e9] dark:bg-emerald-950/30 items-center justify-center mr-3.5">
+                      <Ionicons name="resize-outline" size={16} color="#469e80" />
+                    </View>
+                    <View className="flex-1">
+                      <Text style={{ fontFamily: "Montserrat_500Medium" }} className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Total Area</Text>
+                      <Text
+                        style={{ fontFamily: "Montserrat_600SemiBold" }}
+                        className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5"
+                      >
+                        {orchardData?.area || "14.5 Acres"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 5. Location */}
+                  <View className="flex-row items-center pt-3">
+                    <View className="w-9 h-9 rounded-full bg-[#e8f5e9] dark:bg-emerald-950/30 items-center justify-center mr-3.5">
+                      <Ionicons name="location-outline" size={16} color="#469e80" />
+                    </View>
+                    <View className="flex-1">
+                      <Text style={{ fontFamily: "Montserrat_500Medium" }} className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Location</Text>
+                      <Text
+                        style={{ fontFamily: "Montserrat_600SemiBold" }}
+                        className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5"
+                      >
+                        {resolvedCity}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Optional Note / Message Card from Orchard Setup */}
+                {orchardData?.message && (
+                  <View>
+                    <View className="flex-row items-center mb-2 mt-1">
+                      <View className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2" />
+                      <Text
+                        style={{ fontFamily: "Montserrat_700Bold" }}
+                        className={`text-[10px] tracking-[1.2px] uppercase ${
+                          isDark ? "text-white/60" : "text-amber-900/60"
+                        }`}
+                      >
+                        ORCHARD ADVISORY NOTES
+                      </Text>
+                    </View>
+                    <View className="bg-amber-50/50 dark:bg-amber-950/10 border-l-4 border-amber-400 p-4 rounded-r-2xl border border-t-amber-100/30 border-r-amber-100/30 border-b-amber-100/30">
+                      <View className="flex-row items-center mb-1">
+                        <Ionicons name="bookmark" size={13} color="#d97706" />
+                        <Text
+                          style={{ fontFamily: "Montserrat_700Bold" }}
+                          className="text-[#b45309] dark:text-amber-400 text-xs font-bold ml-1.5 uppercase tracking-wide"
+                        >
+                          Setup Notes
+                        </Text>
+                      </View>
+                      <Text
+                        style={{ fontFamily: "Montserrat_500Medium" }}
+                        className="text-amber-800 dark:text-amber-300 text-xs leading-relaxed mt-1"
+                      >
+                        {orchardData.message}
+                      </Text>
+                    </View>
+                  </View>
+                )}
               </View>
             )}
           </View>
