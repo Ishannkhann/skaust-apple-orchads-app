@@ -140,7 +140,7 @@ export default function Home() {
 
   return (
     <SafeAreaView
-      className={`flex-1 ${isDark ? "bg-slate-950" : "bg-lime-50"}`}
+      className={`flex-1 ${isDark ? "bg-slate-950" : "bg-[#F2F8E8]"}`}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -157,7 +157,7 @@ export default function Home() {
               className={`rounded-[24px] overflow-hidden border ${
                 isDark
                   ? "bg-slate-900 border-slate-800"
-                  : "bg-white border-green-100"
+                  : "bg-white border-[#DCE8C8]"
               }`}
             >
               <View className="px-4 py-3">
@@ -171,11 +171,11 @@ export default function Home() {
 
                       {/* LOCATION + LIVE DOT */}
                       <View className="flex-row items-center">
-                        <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                        <View className="w-2 h-2 rounded-full bg-[#6D8B4F] mr-2" />
                         <Text
                           style={{ fontFamily: "Montserrat_600SemiBold" }}
                           className={`text-[10px] tracking-[1.2px] ${
-                            isDark ? "text-white/60" : "text-green-900/60"
+                            isDark ? "text-white/60" : "text-[#33422A]/60"
                           }`}
                         >
                           SRINAGAR • LIVE
@@ -200,7 +200,7 @@ export default function Home() {
                               lineHeight: 48,
                               transform: [{ scale: tempAnim }],
                             }}
-                            className={isDark ? "text-white" : "text-green-950"}
+                            className={isDark ? "text-white" : "text-[#33422A]"}
                           >
                             26°C
                           </Animated.Text>
@@ -225,7 +225,7 @@ export default function Home() {
                       <Text
                         style={{ fontFamily: "Montserrat_500Medium" }}
                         className={`text-[11px] mt-0.5 ${
-                          isDark ? "text-white/70" : "text-green-900/70"
+                          isDark ? "text-white/70" : "text-[#33422A]/70"
                         }`}
                       >
                         Partly Sunny
@@ -239,11 +239,11 @@ export default function Home() {
 
                     {/* RAIN */}
                     <View className="flex-row items-center">
-                      <Ionicons name="rainy-outline" size={13} color="#60a5fa" />
+                      <Ionicons name="rainy-outline" size={13} color="#8BA862" />
                       <Text
                         style={{ fontFamily: "Montserrat_500Medium" }}
                         className={`ml-1 text-[10px] ${
-                          isDark ? "text-white" : "text-green-950"
+                          isDark ? "text-white" : "text-[#33422A]"
                         }`}
                       >
                         Rain 2mm
@@ -254,11 +254,11 @@ export default function Home() {
 
                     {/* HUMIDITY */}
                     <View className="flex-row items-center">
-                      <Ionicons name="water-outline" size={13} color="#60a5fa" />
+                      <Ionicons name="water-outline" size={13} color="#8BA862" />
                       <Text
                         style={{ fontFamily: "Montserrat_500Medium" }}
                         className={`ml-1 text-[10px] ${
-                          isDark ? "text-white" : "text-green-950"
+                          isDark ? "text-white" : "text-[#33422A]"
                         }`}
                       >
                         Humidity 68%
@@ -268,7 +268,7 @@ export default function Home() {
                     {/* 30% BELOW STACK */}
                     <Text
                       style={{ fontFamily: "Montserrat_700Bold" }}
-                      className="text-blue-500 text-[16px] mt-1"
+                      className="text-[#8BA862] text-[14px] mt-2"
                     >
                       Rain Probability : 30%
                     </Text>
@@ -276,7 +276,7 @@ export default function Home() {
                   </View>
                 </View>
 
-                {/* SEGMENTED BLUE BAR */}
+                {/* SEGMENTED BAR */}
                 <View className="flex-row mt-2 items-center">
 
                   {Array.from({ length: 10 }).map((_, i) => (
@@ -286,7 +286,7 @@ export default function Home() {
                     >
                       <View
                         className={`h-full ${
-                          i < 3 ? "bg-blue-500" : "bg-transparent"
+                          i < 3 ? "bg-[#8BA862]" : "bg-transparent"
                         }`}
                       />
                     </View>
@@ -307,7 +307,7 @@ export default function Home() {
             <Text
               style={{ fontFamily: "Montserrat_700Bold" }}
               className={`text-xl ${
-                isDark ? "text-white" : "text-green-950"
+                isDark ? "text-white" : "text-[#33422A]"
               }`}
             >
               My Orchards
@@ -316,7 +316,7 @@ export default function Home() {
             <TouchableOpacity
               onPress={addNewOrchard}
               className={`px-4 h-10 rounded-2xl flex-row items-center justify-center ${
-                isDark ? "bg-green-700" : "bg-green-600"
+                isDark ? "bg-[#566F3D]" : "bg-[#6D8B4F]"
               }`}
             >
               <Ionicons name="add" size={18} color="white" />
@@ -337,26 +337,26 @@ export default function Home() {
                 className={`w-full rounded-3xl border border-dashed p-8 items-center justify-center ${
                   isDark
                     ? "bg-slate-900 border-slate-700"
-                    : "bg-white border-green-200"
+                    : "bg-white border-[#C8D9AC]"
                 }`}
                 style={{ minHeight: CARD_HEIGHT }}
               >
                 <View
                   className={`w-16 h-16 rounded-2xl items-center justify-center ${
-                    isDark ? "bg-green-800" : "bg-green-100"
+                    isDark ? "bg-[#566F3D]" : "bg-[#E3EDD0]"
                   }`}
                 >
                   <Ionicons
                     name="add"
                     size={32}
-                    color={isDark ? "#86efac" : "#166534"}
+                    color={isDark ? "#C9E0A0" : "#566F3D"}
                   />
                 </View>
 
                 <Text
                   style={{ fontFamily: "Montserrat_700Bold" }}
                   className={`text-xl mt-5 ${
-                    isDark ? "text-white" : "text-green-950"
+                    isDark ? "text-white" : "text-[#33422A]"
                   }`}
                 >
                   Add Your First Orchard
@@ -365,7 +365,7 @@ export default function Home() {
                 <Text
                   style={{ fontFamily: "Montserrat_500Medium" }}
                   className={`text-center mt-2 leading-6 ${
-                    isDark ? "text-gray-400" : "text-green-700"
+                    isDark ? "text-gray-400" : "text-[#6D8B4F]"
                   }`}
                 >
                   Start managing your orchards, monitoring fields, and

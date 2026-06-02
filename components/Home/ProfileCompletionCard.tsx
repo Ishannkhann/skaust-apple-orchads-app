@@ -30,7 +30,7 @@ export default function ProfileCompletionCard({
       className={`mt-6 rounded-3xl p-5 border ${
         isDark
           ? "bg-slate-800 border-slate-700"
-          : "bg-white border-green-100"
+          : "bg-white border-[#DCE8C8]"
       }`}
     >
 
@@ -48,7 +48,7 @@ export default function ProfileCompletionCard({
             className={`text-lg ${
               isDark
                 ? "text-white"
-                : "text-green-950"
+                : "text-[#33422A]"
             }`}
           >
             Complete Your Profile
@@ -63,7 +63,7 @@ export default function ProfileCompletionCard({
             className={`mt-1 ${
               isDark
                 ? "text-gray-400"
-                : "text-green-700"
+                : "text-[#6D8B4F]"
             }`}
           >
             {progress}% Completed
@@ -75,7 +75,7 @@ export default function ProfileCompletionCard({
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={onEdit}
-          className="bg-green-700 px-4 py-2 rounded-xl flex-row items-center"
+          className="bg-[#6D8B4F] px-4 py-2 rounded-xl flex-row items-center"
         >
 
           <Pencil
@@ -109,7 +109,7 @@ export default function ProfileCompletionCard({
         className={`mt-4 leading-6 ${
           isDark
             ? "text-gray-400"
-            : "text-green-800"
+            : "text-[#3D4A30]"
         }`}
       >
         Add orchard details and farm information

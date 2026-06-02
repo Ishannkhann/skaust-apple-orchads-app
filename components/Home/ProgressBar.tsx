@@ -18,16 +18,16 @@ export default function ProgressBar({
     <View
       className={`w-full h-3 rounded-full overflow-hidden mt-3 ${
         isIncomplete
-          ? "bg-red-100"
-          : "bg-green-100"
+          ? "bg-[#F2E3BE]"
+          : "bg-[#E3EDD0]"
       }`}
     >
 
       <View
         className={`h-full rounded-full ${
           isIncomplete
-            ? "bg-red-500"
-            : "bg-green-700"
+            ? "bg-[#D9A441]"
+            : "bg-[#6D8B4F]"
         }`}
         style={{
           width: `${progress}%`,

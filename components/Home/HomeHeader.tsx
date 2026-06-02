@@ -14,7 +14,7 @@ export default function HomeHeader() {
       {/* THEME BACKGROUND WRAPPER (FIX) */}
       <View
         className={`${
-          isDark ? "bg-slate-950" : "bg-lime-50"
+          isDark ? "bg-slate-950" : "bg-[#F2F8E8]"
         }`}
       >
         <View className="px-5 pt-4 pb-2">
@@ -28,10 +28,10 @@ export default function HomeHeader() {
               className={`w-12 h-12 rounded-2xl items-center justify-center border ${
                 isDark
                   ? "bg-slate-800 border-slate-700"
-                  : "bg-white border-green-100"
+                  : "bg-white border-[#DCE8C8]"
               }`}
             >
-              <Menu size={24} color={isDark ? "white" : "#14532d"} />
+              <Menu size={24} color={isDark ? "white" : "#33422A"} />
             </TouchableOpacity>
 
             {/* GREETING */}

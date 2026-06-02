@@ -139,7 +139,7 @@ export default function SideDrawer({
               className={`text-2xl ${
                 isDark
                   ? "text-white"
-                  : "text-green-950"
+                  : "text-[#33422A]"
               }`}
             >
               Menu
@@ -154,7 +154,7 @@ export default function SideDrawer({
                 color={
                   isDark
                     ? "white"
-                    : "#14532d"
+                    : "#33422A"
                 }
               />
 
@@ -182,7 +182,7 @@ export default function SideDrawer({
                     className={`flex-row items-center py-4 px-4 rounded-2xl mb-3 ${
                       isDark
                         ? "bg-slate-800"
-                        : "bg-lime-50"
+                        : "bg-[#F2F8E8]"
                     }`}
                   >
 
@@ -191,7 +191,7 @@ export default function SideDrawer({
                       color={
                         isDark
                           ? "white"
-                          : "#14532d"
+                          : "#6D8B4F"
                       }
                     />
 
@@ -203,7 +203,7 @@ export default function SideDrawer({
                       className={`ml-4 text-base ${
                         isDark
                           ? "text-white"
-                          : "text-green-950"
+                          : "text-[#33422A]"
                       }`}
                     >
                       {item.title}

@@ -11,6 +11,10 @@ import {
   useColorScheme,
   Alert,
   ActivityIndicator,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -189,18 +193,23 @@ function interpolateToHourly(threeHourList: any[]) {
 export default function OrchardDetailScreen() {
   const router = useRouter();
   const { orchard } = useLocalSearchParams();
-  let orchardData = null;
+  let parsedOrchardData = null;
   try {
     if (orchard) {
-      orchardData =
+      parsedOrchardData =
         typeof orchard === "string"
           ? JSON.parse(orchard)
           : orchard;
     }
   } catch (e) {
-    orchardData = null;
+    parsedOrchardData = null;
   }
   const isDark = useColorScheme() === "dark";
+
+  // ─── EDITABLE ORCHARD DATA (so the Edit button can update specs live) ───
+  // We keep the original parsed data intact and work off an editable copy.
+  const [orchardData, setOrchardData] = useState<any>(parsedOrchardData);
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"home" | "info">("home");
   // WEATHER SUB-TABS: Today, Tomorrow, Next Week (Next 16 Days)
@@ -208,7 +217,7 @@ export default function OrchardDetailScreen() {
   // Weather States
   const [loading, setLoading] = useState(false);
   const [weatherError, setWeatherError] = useState<string | null>(null);
-  const [resolvedCity, setResolvedCity] = useState<string>(orchardData?.location || "Nishat");
+  const [resolvedCity, setResolvedCity] = useState<string>(parsedOrchardData?.location || "Nishat");
   const [weatherData, setWeatherData] = useState<{
     hourly: typeof MOCK_HOURLY;
     daily: typeof MOCK_DAILY_16_DAYS;
@@ -217,6 +226,49 @@ export default function OrchardDetailScreen() {
     daily: MOCK_DAILY_16_DAYS,
   });
   const [expandedDays, setExpandedDays] = useState(false); // Toggle to show all 16 days
+
+  // ─── EDIT ORCHARD MODAL STATE ───
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    orchardType: "",
+    variety: "",
+    area: "",
+    location: "",
+    message: "",
+  });
+
+  // Open the modal, pre-filling fields with the current values shown on the card.
+  const handleEditOrchard = () => {
+    setEditForm({
+      name: orchardData?.name || "",
+      orchardType: orchardData?.orchardType || "",
+      variety: orchardData?.variety || "",
+      area: orchardData?.area || "",
+      // Prefer the explicit orchard location, fall back to the API-resolved city.
+      location: orchardData?.location || resolvedCity || "",
+      message: orchardData?.message || "",
+    });
+    setShowEditModal(true);
+  };
+
+  // Save edits → update editable orchardData (specs card updates instantly).
+  const handleSaveOrchard = () => {
+    setOrchardData((prev: any) => ({
+      ...(prev || {}),
+      name: editForm.name.trim(),
+      orchardType: editForm.orchardType.trim(),
+      variety: editForm.variety.trim(),
+      area: editForm.area.trim(),
+      location: editForm.location.trim(),
+      message: editForm.message.trim(),
+    }));
+    // Keep the weather card's location label in sync if the user changed it.
+    if (editForm.location.trim()) {
+      setResolvedCity(editForm.location.trim());
+    }
+    setShowEditModal(false);
+  };
 
   const heroImage = selectedImage || orchardData?.image || null;
   const hasImage = !!heroImage;
@@ -275,7 +327,7 @@ export default function OrchardDetailScreen() {
             const date = new Date(item.dt * 1000);
 
             // Format time without leading zeros (e.g. "1:30 AM")
-            const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute:'2-digit' });
+            const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
             let iconName = "partly-sunny";
             if (item.weather[0].main === "Rain") iconName = "rainy";
@@ -324,9 +376,9 @@ export default function OrchardDetailScreen() {
             const rainVolSum = Math.round(dailyMap[dayKey].rainVols);
 
             // Averages
-            const avgHumidity = Math.round(dailyMap[dayKey].humidityList.reduce((a:any, b:any)=>a+b, 0) / dailyMap[dayKey].humidityList.length);
-            const avgWind = (dailyMap[dayKey].windList.reduce((a:any, b:any)=>a+b, 0) / dailyMap[dayKey].windList.length * 3.6).toFixed(2); // Convert m/s to km/h
-            const avgClouds = Math.round(dailyMap[dayKey].cloudsList.reduce((a:any, b:any)=>a+b, 0) / dailyMap[dayKey].cloudsList.length);
+            const avgHumidity = Math.round(dailyMap[dayKey].humidityList.reduce((a: any, b: any) => a + b, 0) / dailyMap[dayKey].humidityList.length);
+            const avgWind = (dailyMap[dayKey].windList.reduce((a: any, b: any) => a + b, 0) / dailyMap[dayKey].windList.length * 3.6).toFixed(2); // Convert m/s to km/h
+            const avgClouds = Math.round(dailyMap[dayKey].cloudsList.reduce((a: any, b: any) => a + b, 0) / dailyMap[dayKey].cloudsList.length);
             let iconName = "partly-sunny";
             let desc = "Partly Cloudy";
             const weather = dailyMap[dayKey].weatherMain;
@@ -345,7 +397,7 @@ export default function OrchardDetailScreen() {
               humidity: avgHumidity,
               wind: `${avgWind}KM/Hr`,
               clouds: avgClouds,
-              dewPoint: `${Math.round(minTemp - ((100 - avgHumidity)/5))}°`,
+              dewPoint: `${Math.round(minTemp - ((100 - avgHumidity) / 5))}°`,
               feelsLike: `${Math.round(maxTemp)}°`,
             };
           });
@@ -439,10 +491,10 @@ export default function OrchardDetailScreen() {
     return { x, y, prob, vol: item.rainVol || "0mm", label: item.time };
   });
   const fillPathD = `${points.reduce((acc, p, idx) => {
-    return acc + (idx === 0 ? `M ${p.x} ${p.y}` :  `L ${p.x} ${p.y}`);
+    return acc + (idx === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`);
   }, "")} L ${points[points.length - 1].x} 55 L ${points[0].x} 55 Z`;
   const linePathD = points.reduce((acc, p, idx) => {
-    return acc + (idx === 0 ? `M ${p.x} ${p.y}` :  `L ${p.x} ${p.y}`);
+    return acc + (idx === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`);
   }, "");
 
   return (
@@ -1213,17 +1265,40 @@ export default function OrchardDetailScreen() {
               /* --- STUNNING, COHESIVE ORCHARD INFO TAB DASHBOARD --- */
               <View className="flex-1 space-y-4">
 
-                {/* Section Header: Orchard Specifications */}
-                <View className="flex-row items-center mb-1">
-                  <View className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2" />
-                  <Text
-                    style={{ fontFamily: "Montserrat_700Bold" }}
-                    className={`text-[10px] tracking-[1.2px] uppercase ${
-                      isDark ? "text-white/60" : "text-green-900/60"
+                {/* Section Header: Orchard Specifications (now with Edit button) */}
+                <View className="flex-row items-center justify-between mb-1">
+                  {/* Left: dot + title */}
+                  <View className="flex-row items-center">
+                    <View className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2" />
+                    <Text
+                      style={{ fontFamily: "Montserrat_700Bold" }}
+                      className={`text-[10px] tracking-[1.2px] uppercase ${
+                        isDark ? "text-white/60" : "text-green-900/60"
+                      }`}
+                    >
+                      ORCHARD SPECIFICATIONS
+                    </Text>
+                  </View>
+
+                  {/* Right: Edit button */}
+                  <TouchableOpacity
+                    onPress={handleEditOrchard}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit orchard information"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    className={`flex-row items-center rounded-full px-3 py-1.5 ${
+                      isDark ? "bg-emerald-950/40" : "bg-[#e8f5e9]"
                     }`}
                   >
-                    ORCHARD SPECIFICATIONS
-                  </Text>
+                    <Ionicons name="create-outline" size={13} color="#469e80" />
+                    <Text
+                      style={{ fontFamily: "Montserrat_600SemiBold", color: "#469e80" }}
+                      className="text-[10px] tracking-[0.5px] uppercase ml-1"
+                    >
+                      Edit
+                    </Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Primary Specifications Card (Stacked layout) */}
@@ -1309,7 +1384,7 @@ export default function OrchardDetailScreen() {
                         style={{ fontFamily: "Montserrat_600SemiBold" }}
                         className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5"
                       >
-                        {resolvedCity}
+                        {orchardData?.location || resolvedCity}
                       </Text>
                     </View>
                   </View>
@@ -1318,17 +1393,6 @@ export default function OrchardDetailScreen() {
                 {/* Optional Note / Message Card from Orchard Setup */}
                 {orchardData?.message && (
                   <View>
-                    <View className="flex-row items-center mb-2 mt-1">
-                      <View className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2" />
-                      <Text
-                        style={{ fontFamily: "Montserrat_700Bold" }}
-                        className={`text-[10px] tracking-[1.2px] uppercase ${
-                          isDark ? "text-white/60" : "text-amber-900/60"
-                        }`}
-                      >
-                        ORCHARD ADVISORY NOTES
-                      </Text>
-                    </View>
                     <View className="bg-amber-50/50 dark:bg-amber-950/10 border-l-4 border-amber-400 p-4 rounded-r-2xl border border-t-amber-100/30 border-r-amber-100/30 border-b-amber-100/30">
                       <View className="flex-row items-center mb-1">
                         <Ionicons name="bookmark" size={13} color="#d97706" />
@@ -1353,6 +1417,139 @@ export default function OrchardDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* ═══════════════ EDIT ORCHARD MODAL ═══════════════ */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          className="flex-1 justify-end"
+          style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+        >
+          <View
+            className={`rounded-t-[28px] px-5 pt-4 pb-8 ${
+              isDark ? "bg-slate-900" : "bg-[#f4fbf0]"
+            }`}
+            style={{ maxHeight: height * 0.9 }}
+          >
+            {/* Grabber */}
+            <View className="items-center mb-3">
+              <View
+                className={`w-12 h-1.5 rounded-full ${
+                  isDark ? "bg-slate-700" : "bg-[#c5d6bb]"
+                }`}
+              />
+            </View>
+
+            {/* Modal Header */}
+            <View className="flex-row items-center justify-between mb-4">
+              <View className="flex-row items-center">
+                <View className="w-9 h-9 rounded-full bg-[#e8f5e9] dark:bg-emerald-950/30 items-center justify-center mr-3">
+                  <Ionicons name="create-outline" size={18} color="#469e80" />
+                </View>
+                <Text
+                  style={{ fontFamily: "Montserrat_700Bold" }}
+                  className={`text-lg font-bold ${
+                    isDark ? "text-white" : "text-[#1b3d2f]"
+                  }`}
+                >
+                  Edit Orchard Info
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowEditModal(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                className={`w-9 h-9 rounded-full items-center justify-center ${
+                  isDark ? "bg-slate-800" : "bg-white"
+                }`}
+              >
+                <Ionicons name="close" size={18} color={isDark ? "#fff" : "#243022"} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 8 }}
+            >
+              {/* Field renderer */}
+              {[
+                { key: "name", label: "Orchard Name", icon: "leaf-outline", placeholder: "e.g. Valley Orchard", multiline: false },
+                { key: "orchardType", label: "Crop Type", icon: "basket-outline", placeholder: "e.g. Apple Orchard", multiline: false },
+                { key: "variety", label: "Variety", icon: "git-branch-outline", placeholder: "e.g. Honeycrisp, Gala", multiline: false },
+                { key: "area", label: "Total Area", icon: "resize-outline", placeholder: "e.g. 14.5 Acres", multiline: false },
+                { key: "location", label: "Location", icon: "location-outline", placeholder: "e.g. Nishat, Srinagar", multiline: false },
+              ].map((field) => (
+                <View key={field.key} className="mb-3.5">
+                  <View className="flex-row items-center mb-1.5">
+                    <View className="w-7 h-7 rounded-full bg-[#e8f5e9] dark:bg-emerald-950/30 items-center justify-center mr-2.5">
+                      <Ionicons name={field.icon as any} size={14} color="#469e80" />
+                    </View>
+                    <Text
+                      style={{ fontFamily: "Montserrat_600SemiBold" }}
+                      className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400"
+                    >
+                      {field.label}
+                    </Text>
+                  </View>
+                  <TextInput
+                    value={(editForm as any)[field.key]}
+                    onChangeText={(t) =>
+                      setEditForm((prev) => ({ ...prev, [field.key]: t }))
+                    }
+                    placeholder={field.placeholder}
+                    placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                    multiline={field.multiline}
+                    textAlignVertical={field.multiline ? "top" : "center"}
+                    style={{ fontFamily: "Montserrat_500Medium" }}
+                    className={`rounded-2xl border px-4 py-3 text-sm ${
+                      field.multiline ? "min-h-[88px]" : ""
+                    } ${
+                      isDark
+                        ? "bg-slate-800/60 border-slate-700 text-slate-100"
+                        : "bg-white border-[#e2f0d9] text-slate-800"
+                    }`}
+                  />
+                </View>
+              ))}
+
+              {/* Action Buttons */}
+              <View className="flex-row mt-2" style={{ gap: 12 }}>
+                <TouchableOpacity
+                  onPress={() => setShowEditModal(false)}
+                  activeOpacity={0.8}
+                  className={`flex-1 rounded-2xl py-4 items-center justify-center border ${
+                    isDark ? "border-slate-700 bg-slate-800" : "border-[#e2f0d9] bg-white"
+                  }`}
+                >
+                  <Text
+                    style={{ fontFamily: "Montserrat_600SemiBold" }}
+                    className={`text-sm ${isDark ? "text-slate-200" : "text-[#1b3d2f]"}`}
+                  >
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSaveOrchard}
+                  activeOpacity={0.85}
+                  className="flex-1 rounded-2xl py-4 items-center justify-center bg-emerald-600"
+                >
+                  <Text
+                    style={{ fontFamily: "Montserrat_700Bold" }}
+                    className="text-white text-sm tracking-wide"
+                  >
+                    Save Changes
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }

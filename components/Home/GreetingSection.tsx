@@ -116,7 +116,7 @@ export default function GreetingSection({
         className={`text-sm ${
           isDark
             ? "text-gray-400"
-            : "text-green-700"
+            : "text-[#6D8B4F]"
         }`}
       >
         {greeting}
@@ -133,7 +133,7 @@ export default function GreetingSection({
           className={`text-2xl ${
             isDark
               ? "text-white"
-              : "text-green-950"
+              : "text-[#33422A]"
           }`}
         >
           {name}
