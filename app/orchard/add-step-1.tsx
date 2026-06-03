@@ -1,14 +1,7 @@
-import React, {
-  useCallback,
-  useState,
-  useRef,
-} from "react";
+import React, { useCallback, useState, useRef } from "react";
 
 import {
   View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   useColorScheme,
   Alert,
   KeyboardAvoidingView,
@@ -18,104 +11,47 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import { useRouter } from "expo-router";
 
 import { useFocusEffect } from "@react-navigation/native";
 
+import { useOrchardDraft } from "@/hooks/useOrchardDraft";
+import StepHeader from "@/components/orchard/form/StepHeader";
+import FormField from "@/components/orchard/form/FormField";
+import PrimaryButton from "@/components/orchard/form/PrimaryButton";
+
 export default function AddStep1() {
-
   const router = useRouter();
+  const isDark = useColorScheme() === "dark";
 
-  const isDark =
-    useColorScheme() === "dark";
+  const { loadDraft, saveStep } = useOrchardDraft();
 
   const [name, setName] = useState("");
-  const [district, setDistrict] =
-    useState("");
-
-  const [block, setBlock] =
-    useState("");
-
-  const [village, setVillage] =
-    useState("");
+  const [district, setDistrict] = useState("");
+  const [block, setBlock] = useState("");
+  const [village, setVillage] = useState("");
 
   // ✅ FIX: prevent unnecessary rehydration overwrite
   const hasLoadedRef = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
-
       const loadData = async () => {
+        const { data } = await loadDraft();
 
-        const editing =
-          await AsyncStorage.getItem(
-            "editingOrchard"
-          );
-
-        const newOrchard =
-          await AsyncStorage.getItem(
-            "newOrchard"
-          );
-
-        // ✅ EDIT MODE (highest priority)
-        if (editing) {
-
-          const orchard =
-            JSON.parse(editing);
-
-          setName(
-            orchard.name || ""
-          );
-
-          setDistrict(
-            orchard.district || ""
-          );
-
-          setBlock(
-            orchard.block || ""
-          );
-
-          setVillage(
-            orchard.village || ""
-          );
+        // ✅ EDIT MODE / CREATE MODE (draft present)
+        if (data) {
+          setName(data.name || "");
+          setDistrict(data.district || "");
+          setBlock(data.block || "");
+          setVillage(data.village || "");
 
           hasLoadedRef.current = true;
-
-          return;
-        }
-
-        // ✅ CREATE MODE
-        if (newOrchard) {
-
-          const orchard =
-            JSON.parse(newOrchard);
-
-          setName(
-            orchard.name || ""
-          );
-
-          setDistrict(
-            orchard.district || ""
-          );
-
-          setBlock(
-            orchard.block || ""
-          );
-
-          setVillage(
-            orchard.village || ""
-          );
-
-          hasLoadedRef.current = true;
-
           return;
         }
 
         // 🆕 TRUE FRESH START
         if (!hasLoadedRef.current) {
-
           setName("");
           setDistrict("");
           setBlock("");
@@ -126,41 +62,27 @@ export default function AddStep1() {
       };
 
       loadData();
-
     }, [])
   );
 
   const validate = () => {
-
     if (!name.trim()) {
-      Alert.alert(
-        "Missing Field",
-        "Orchard Name is required"
-      );
+      Alert.alert("Missing Field", "Orchard Name is required");
       return false;
     }
 
     if (!district.trim()) {
-      Alert.alert(
-        "Missing Field",
-        "District is required"
-      );
+      Alert.alert("Missing Field", "District is required");
       return false;
     }
 
     if (!block.trim()) {
-      Alert.alert(
-        "Missing Field",
-        "Block is required"
-      );
+      Alert.alert("Missing Field", "Block is required");
       return false;
     }
 
     if (!village.trim()) {
-      Alert.alert(
-        "Missing Field",
-        "Village is required"
-      );
+      Alert.alert("Missing Field", "Village is required");
       return false;
     }
 
@@ -168,294 +90,75 @@ export default function AddStep1() {
   };
 
   const saveAndNext = async () => {
-
     if (!validate()) return;
 
-    const orchardData = {
+    await saveStep({
       name: name.trim(),
       district: district.trim(),
       block: block.trim(),
       village: village.trim(),
-    };
+    });
 
-    const existingEdit =
-      await AsyncStorage.getItem(
-        "editingOrchard"
-      );
-
-    if (existingEdit) {
-
-      await AsyncStorage.setItem(
-        "editingOrchard",
-        JSON.stringify({
-          ...JSON.parse(
-            existingEdit
-          ),
-          ...orchardData,
-        })
-      );
-
-    } else {
-
-      const existingNew =
-        await AsyncStorage.getItem(
-          "newOrchard"
-        );
-
-      await AsyncStorage.setItem(
-        "newOrchard",
-        JSON.stringify({
-          ...(existingNew
-            ? JSON.parse(
-                existingNew
-              )
-            : {}),
-          ...orchardData,
-        })
-      );
-    }
-
-    router.push(
-      "/orchard/add-step-2"
-    );
+    router.push("/orchard/add-step-2");
   };
 
-  const inputBase =
-    "rounded-2xl px-5 py-5 text-lg border";
-
-  const inputStyle = isDark
-    ? `${inputBase} bg-slate-800 text-white border-slate-700`
-    : `${inputBase} bg-white text-green-950 border-green-100`;
-
   return (
-
     <SafeAreaView
-      className={`flex-1 ${
-        isDark
-          ? "bg-slate-950"
-          : "bg-lime-50"
-      }`}
+      className={`flex-1 ${isDark ? "bg-slate-950" : "bg-surface-light"}`}
     >
-
       <KeyboardAvoidingView
-        behavior={
-          Platform.OS === "ios"
-            ? "padding"
-            : undefined
-        }
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1"
       >
-
         <View className="flex-1 px-5 pt-5">
 
           {/* HEADER */}
-          <Text
-            style={{
-              fontFamily:
-                "Montserrat_700Bold",
-            }}
-            className={`text-3xl ${
-              isDark
-                ? "text-white"
-                : "text-green-950"
-            }`}
-          >
-            Add Orchard
-          </Text>
-
-          <Text
-            style={{
-              fontFamily:
-                "Montserrat_500Medium",
-            }}
-            className={`mt-2 mb-6 text-base ${
-              isDark
-                ? "text-gray-400"
-                : "text-green-700"
-            }`}
-          >
-            Step 1 of 3 • Basic orchard information
-          </Text>
+          <StepHeader
+            title="Add Orchard"
+            subtitle="Step 1 of 3 • Basic orchard information"
+          />
 
           <ScrollView
-            showsVerticalScrollIndicator={
-              false
-            }
-            contentContainerStyle={{
-              paddingBottom: 50,
-            }}
-            className="flex-1"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 50 }}
+            className="flex-1 mt-6"
           >
-
             <View className="gap-6">
+              <FormField
+                label="Orchard Name *"
+                placeholder="Enter orchard name"
+                value={name}
+                onChangeText={setName}
+              />
 
-              {/* ORCHARD NAME */}
-              <View>
+              <FormField
+                label="District *"
+                placeholder="Select district"
+                value={district}
+                onChangeText={setDistrict}
+              />
 
-                <Text
-                  style={{
-                    fontFamily:
-                      "Montserrat_600SemiBold",
-                  }}
-                  className={`mb-2 text-base ${
-                    isDark
-                      ? "text-gray-300"
-                      : "text-green-900"
-                  }`}
-                >
-                  Orchard Name *
-                </Text>
+              <FormField
+                label="Block *"
+                placeholder="Enter block"
+                value={block}
+                onChangeText={setBlock}
+              />
 
-                <TextInput
-                  placeholder="Enter orchard name"
-                  placeholderTextColor="#888"
-                  value={name}
-                  onChangeText={setName}
-                  className={inputStyle}
-                  style={{
-                    textAlignVertical:
-                      "center",
-
-                    fontFamily:
-                      "Montserrat_500Medium",
-                  }}
-                />
-
-              </View>
-
-              {/* DISTRICT */}
-              <View>
-
-                <Text
-                  style={{
-                    fontFamily:
-                      "Montserrat_600SemiBold",
-                  }}
-                  className={`mb-2 text-base ${
-                    isDark
-                      ? "text-gray-300"
-                      : "text-green-900"
-                  }`}
-                >
-                  District *
-                </Text>
-
-                <TextInput
-                  placeholder="Select district"
-                  placeholderTextColor="#888"
-                  value={district}
-                  onChangeText={
-                    setDistrict
-                  }
-                  className={inputStyle}
-                  style={{
-                    textAlignVertical:
-                      "center",
-
-                    fontFamily:
-                      "Montserrat_500Medium",
-                  }}
-                />
-
-              </View>
-
-              {/* BLOCK */}
-              <View>
-
-                <Text
-                  style={{
-                    fontFamily:
-                      "Montserrat_600SemiBold",
-                  }}
-                  className={`mb-2 text-base ${
-                    isDark
-                      ? "text-gray-300"
-                      : "text-green-900"
-                  }`}
-                >
-                  Block *
-                </Text>
-
-                <TextInput
-                  placeholder="Enter block"
-                  placeholderTextColor="#888"
-                  value={block}
-                  onChangeText={setBlock}
-                  className={inputStyle}
-                  style={{
-                    textAlignVertical:
-                      "center",
-
-                    fontFamily:
-                      "Montserrat_500Medium",
-                  }}
-                />
-
-              </View>
-
-              {/* VILLAGE */}
-              <View>
-
-                <Text
-                  style={{
-                    fontFamily:
-                      "Montserrat_600SemiBold",
-                  }}
-                  className={`mb-2 text-base ${
-                    isDark
-                      ? "text-gray-300"
-                      : "text-green-900"
-                  }`}
-                >
-                  Village *
-                </Text>
-
-                <TextInput
-                  placeholder="Enter village"
-                  placeholderTextColor="#888"
-                  value={village}
-                  onChangeText={
-                    setVillage
-                  }
-                  className={inputStyle}
-                  style={{
-                    textAlignVertical:
-                      "center",
-
-                    fontFamily:
-                      "Montserrat_500Medium",
-                  }}
-                />
-
-              </View>
-
+              <FormField
+                label="Village *"
+                placeholder="Enter village"
+                value={village}
+                onChangeText={setVillage}
+              />
             </View>
-
           </ScrollView>
 
           {/* BUTTON */}
-          <TouchableOpacity
-            onPress={saveAndNext}
-            activeOpacity={0.85}
-            className="bg-green-600 py-5 rounded-2xl mb-4"
-          >
-
-            <Text
-              style={{
-                fontFamily:
-                  "Montserrat_600SemiBold",
-              }}
-              className="text-white text-center text-lg"
-            >
-              Next
-            </Text>
-
-          </TouchableOpacity>
+          <PrimaryButton label="Next" onPress={saveAndNext} className="mb-4" />
 
         </View>
-
       </KeyboardAvoidingView>
-
     </SafeAreaView>
   );
 }

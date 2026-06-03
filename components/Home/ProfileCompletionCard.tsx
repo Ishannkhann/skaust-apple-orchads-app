@@ -1,3 +1,4 @@
+
 import React from "react";
 
 import {
@@ -9,6 +10,8 @@ import {
 
 import { Pencil } from "lucide-react-native";
 
+import { Colors } from "@/theme/colors";
+import { Fonts } from "@/theme/fonts";
 import ProgressBar from "./ProgressBar";
 
 interface ProfileCompletionCardProps {
@@ -30,7 +33,7 @@ export default function ProfileCompletionCard({
       className={`mt-6 rounded-3xl p-5 border ${
         isDark
           ? "bg-slate-800 border-slate-700"
-          : "bg-white border-[#DCE8C8]"
+          : "bg-white border-edge-green"
       }`}
     >
 
@@ -42,13 +45,12 @@ export default function ProfileCompletionCard({
           {/* TITLE */}
           <Text
             style={{
-              fontFamily:
-                "Montserrat_700Bold",
+              fontFamily: Fonts.bold,
             }}
             className={`text-lg ${
               isDark
                 ? "text-white"
-                : "text-[#33422A]"
+                : "text-brand-text"
             }`}
           >
             Complete Your Profile
@@ -57,13 +59,12 @@ export default function ProfileCompletionCard({
           {/* SUBTITLE */}
           <Text
             style={{
-              fontFamily:
-                "Montserrat_500Medium",
+              fontFamily: Fonts.medium,
             }}
             className={`mt-1 ${
               isDark
                 ? "text-gray-400"
-                : "text-[#6D8B4F]"
+                : "text-brand-green"
             }`}
           >
             {progress}% Completed
@@ -75,7 +76,7 @@ export default function ProfileCompletionCard({
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={onEdit}
-          className="bg-[#6D8B4F] px-4 py-2 rounded-xl flex-row items-center"
+          className="bg-brand-green px-4 py-2 rounded-xl flex-row items-center"
         >
 
           <Pencil
@@ -85,8 +86,7 @@ export default function ProfileCompletionCard({
 
           <Text
             style={{
-              fontFamily:
-                "Montserrat_600SemiBold",
+              fontFamily: Fonts.semibold,
             }}
             className="text-white ml-2"
           >
@@ -103,13 +103,12 @@ export default function ProfileCompletionCard({
       {/* DESCRIPTION */}
       <Text
         style={{
-          fontFamily:
-            "Montserrat_500Medium",
+          fontFamily: Fonts.medium,
         }}
         className={`mt-4 leading-6 ${
           isDark
             ? "text-gray-400"
-            : "text-[#3D4A30]"
+            : "text-brand-text-deep"
         }`}
       >
         Add orchard details and farm information

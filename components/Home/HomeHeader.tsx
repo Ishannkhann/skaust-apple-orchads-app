@@ -1,4 +1,7 @@
+
 import React, { useState } from "react";
+
+import { Colors } from "@/theme/colors";
 import { View, TouchableOpacity, useColorScheme } from "react-native";
 import { Menu } from "lucide-react-native";
 import GreetingSection from "./GreetingSection";
@@ -14,7 +17,7 @@ export default function HomeHeader() {
       {/* THEME BACKGROUND WRAPPER (FIX) */}
       <View
         className={`${
-          isDark ? "bg-slate-950" : "bg-[#F2F8E8]"
+          isDark ? "bg-slate-950" : "bg-surface-light"
         }`}
       >
         <View className="px-5 pt-4 pb-2">
@@ -28,10 +31,10 @@ export default function HomeHeader() {
               className={`w-12 h-12 rounded-2xl items-center justify-center border ${
                 isDark
                   ? "bg-slate-800 border-slate-700"
-                  : "bg-white border-[#DCE8C8]"
+                  : "bg-white border-edge-green"
               }`}
             >
-              <Menu size={24} color={isDark ? "white" : "#33422A"} />
+              <Menu size={24} color={isDark ? "white" : Colors.brandText} />
             </TouchableOpacity>
 
             {/* GREETING */}
@@ -52,3 +55,4 @@ export default function HomeHeader() {
     </>
   );
 }
+

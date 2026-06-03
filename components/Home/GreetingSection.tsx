@@ -3,6 +3,8 @@ import React, {
   useRef,
 } from "react";
 
+import { Fonts } from "@/theme/fonts";
+
 import {
   View,
   Text,
@@ -110,13 +112,12 @@ export default function GreetingSection({
       {/* GREETING */}
       <Text
         style={{
-          fontFamily:
-            "Montserrat_500Medium",
+          fontFamily: Fonts.medium,
         }}
         className={`text-sm ${
           isDark
             ? "text-gray-400"
-            : "text-[#6D8B4F]"
+            : "text-brand-green"
         }`}
       >
         {greeting}
@@ -127,13 +128,12 @@ export default function GreetingSection({
 
         <Text
           style={{
-            fontFamily:
-              "Montserrat_700Bold",
+            fontFamily: Fonts.bold,
           }}
           className={`text-2xl ${
             isDark
               ? "text-white"
-              : "text-[#33422A]"
+              : "text-brand-text"
           }`}
         >
           {name}
@@ -144,8 +144,7 @@ export default function GreetingSection({
             transform: [
               { rotate },
             ],
-            fontFamily:
-              "Montserrat_600SemiBold",
+            fontFamily: Fonts.semibold,
           }}
           className="text-2xl ml-2"
         >
@@ -157,3 +156,4 @@ export default function GreetingSection({
     </View>
   );
 }
+
