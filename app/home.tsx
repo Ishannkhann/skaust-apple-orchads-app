@@ -31,6 +31,8 @@ import EmptyOrchards from "../components/Home/EmptyOrchards";
 const { width } = Dimensions.get("window");
 
 const CARD_WIDTH = width * 0.82;
+// Full-width card (used when there is only a single orchard); 20px side padding.
+const FULL_CARD_WIDTH = width - 40;
 
 export default function Home() {
   const router = useRouter();
@@ -131,6 +133,23 @@ export default function Home() {
 
           {orchards.length === 0 ? (
             <EmptyOrchards onPress={addNewOrchard} />
+          ) : orchards.length === 1 ? (
+            // Single orchard → full-width card (no carousel).
+            <View className="px-5">
+              <OrchardCard
+                item={orchards[0]}
+                width={FULL_CARD_WIDTH}
+                marginRight={0}
+                onPress={() =>
+                  router.push({
+                    pathname: "/orchard/orchard-detail",
+                    params: {
+                      orchard: JSON.stringify(orchards[0]),
+                    },
+                  })
+                }
+              />
+            </View>
           ) : (
             <FlatList
               data={orchards}

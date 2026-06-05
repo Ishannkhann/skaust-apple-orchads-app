@@ -33,10 +33,12 @@ export default function OrchardCard({
   item,
   width,
   onPress,
+  marginRight = 14,
 }: {
   item: Orchard;
   width: number;
   onPress: () => void;
+  marginRight?: number;
 }) {
   const isDark = useColorScheme() === "dark";
 
@@ -70,7 +72,7 @@ export default function OrchardCard({
       style={{
         width,
         height: CARD_HEIGHT,
-        marginRight: 14,
+        marginRight,
       }}
     >
       <View

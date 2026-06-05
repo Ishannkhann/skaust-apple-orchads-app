@@ -2,26 +2,27 @@
   "expo": {
     "name": "ERAM",
     "slug": "Empirical-Risk-Assessment-Model",
-
     "scheme": "orchardapp",
-
     "plugins": [
       "expo-router",
       "expo-font",
       "expo-image",
       "expo-web-browser",
-      "expo-image-picker"
+      "expo-image-picker",
+      "expo-location"
     ],
-
     "ios": {
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "We need access to upload orchard images",
-        "NSCameraUsageDescription": "We need camera access for orchard photos"
+        "NSCameraUsageDescription": "We need camera access for orchard photos",
+        "NSLocationWhenInUseUsageDescription": "We use your location to show precise local weather for your orchard"
       }
     },
-
     "android": {
-      "permissions": []
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     }
   }
 }

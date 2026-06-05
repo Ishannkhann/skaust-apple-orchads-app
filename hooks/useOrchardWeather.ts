@@ -21,7 +21,19 @@ import type { WeatherData } from "@/types/weather";
  * noisy console.log/console.warn calls have been removed. The console.error in
  * the catch is kept (it surfaces real failures) but no longer logs secrets.
  */
-export function useOrchardWeather(location: string | undefined) {
+type Coords = { lat: number; lon: number };
+
+/**
+ * Fetches + maps the OpenWeather 5-day forecast.
+ *
+ * Location precision: if `coords` (device GPS) are provided, the forecast is
+ * fetched by exact latitude/longitude (most precise). Otherwise it falls back
+ * to the orchard's `location` name. Re-fetches whenever either input changes.
+ */
+export function useOrchardWeather(
+  location: string | undefined,
+  coords?: Coords | null
+) {
   const [loading, setLoading] = useState(false);
   const [weatherError, setWeatherError] = useState<string | null>(null);
   const [resolvedCity, setResolvedCity] = useState<string>(location || "Nishat");
@@ -46,12 +58,15 @@ export function useOrchardWeather(location: string | undefined) {
       setLoading(true);
       setWeatherError(null);
 
+      // Prefer precise device coordinates; otherwise query by city name.
+      const baseUrl = "https://api.openweathermap.org/data/2.5/forecast";
+      const query = coords
+        ? `lat=${coords.lat}&lon=${coords.lon}`
+        : `q=${encodeURIComponent(city)}`;
+
       try {
-        // Fetch directly using City Name (eliminating geocoding extra step entirely!)
         let forecastRes = await fetch(
-          `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(
-            city
-          )}&units=metric&appid=${OPENWEATHER_API_KEY}`
+          `${baseUrl}?${query}&units=metric&appid=${OPENWEATHER_API_KEY}`
         );
 
         // 401: Invalid key / non-activated key
@@ -61,10 +76,10 @@ export function useOrchardWeather(location: string | undefined) {
           );
         }
 
-        // 404: City name not found. Fallback to Srinagar.
+        // 404: only possible for name queries. Fallback to Srinagar.
         if (forecastRes.status === 404) {
           forecastRes = await fetch(
-            `https://api.openweathermap.org/data/2.5/forecast?q=Srinagar&units=metric&appid=${OPENWEATHER_API_KEY}`
+            `${baseUrl}?q=Srinagar&units=metric&appid=${OPENWEATHER_API_KEY}`
           );
           if (!forecastRes.ok) {
             throw new Error(
@@ -229,7 +244,7 @@ export function useOrchardWeather(location: string | undefined) {
     }
 
     fetchWeather();
-  }, [location]);
+  }, [location, coords?.lat, coords?.lon]);
 
   return { loading, weatherError, resolvedCity, setResolvedCity, weatherData };
 }
