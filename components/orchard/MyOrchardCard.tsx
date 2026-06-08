@@ -92,7 +92,7 @@ const MyOrchardCard = React.memo(
                 isDark ? "text-gray-500" : "text-brand-green"
               }`}
             >
-              {item.area} Canals{item.landType ? ` • ${item.landType}` : ""}
+              {item.area} Kanals{item.landType ? ` • ${item.landType}` : ""}
             </Text>
           )}
 

@@ -69,7 +69,7 @@ export default function EditOrchardModal({
       >
         <View
           className={`rounded-t-[28px] px-5 pt-4 pb-8 ${
-            isDark ? "bg-slate-900" : "bg-[#f4fbf0]"
+            isDark ? "bg-slate-900" : "bg-surface-light"
           }`}
           style={{ maxHeight: height * 0.9 }}
         >

@@ -17,6 +17,8 @@ import type { Orchard } from "@/types/orchard";
 
 const CARD_HEIGHT = 200;
 
+const DEFAULT_ORCHARD_IMAGE = require("../../assets/images/fall_back_apple_icon.jpg");
+
 const formatOrchardName = (name: string) => {
   if (!name) return "";
   return name.length > 10 ? name.slice(0, 10) + "..." : name;
@@ -95,12 +97,13 @@ export default function OrchardCard({
             <View className="flex-row items-start justify-between">
               <View className="flex-row flex-1 pr-3">
                 <Image
-                  source={{
-                    uri:
-                      item.image ||
-                      "https://via.placeholder.com/100",
-                  }}
+                  source={
+                    item.image
+                      ? { uri: item.image }
+                      : DEFAULT_ORCHARD_IMAGE
+                  }
                   className="w-10 h-10 rounded-full border-2 border-white"
+                  resizeMode="cover"
                 />
 
                 <View className="ml-3 flex-1">

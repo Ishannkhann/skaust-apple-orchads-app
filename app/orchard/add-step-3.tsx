@@ -124,7 +124,7 @@ export default function AddStep3() {
 
         {/* AREA */}
         <FormField
-          label="Area in Canals"
+          label="Area in Kanals"
           value={area}
           onChangeText={setArea}
           keyboardType="numeric"

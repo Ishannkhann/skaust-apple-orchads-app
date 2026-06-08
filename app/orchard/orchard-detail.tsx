@@ -1,17 +1,21 @@
 import React, { useState } from "react";
 
 import {
-  SafeAreaView,
   ScrollView,
+  Text,
   View,
-  TouchableOpacity,
   Dimensions,
   useColorScheme,
   Alert,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { Fonts } from "@/theme/fonts";
+
+import BackButton from "@/components/ui/BackButton";
 
 import { useOrchardWeather } from "@/hooks/useOrchardWeather";
 import { interpolateToHourly } from "@/lib/weather";
@@ -43,6 +47,13 @@ export default function OrchardDetailScreen() {
     parsedOrchardData = null;
   }
   const isDark = useColorScheme() === "dark";
+  const insets = useSafeAreaInsets();
+
+  // Back button floats high at its default (insets.top + 12 via the component).
+  // Title is positioned lower independently (like in MyOrchardsHeader/Notifications) so it clears the Dynamic Island.
+  // Hero gets extra top padding so it starts below the title.
+  const titleTop = insets.top + 12;
+  const contentTopPadding = insets.top + 60;
 
   // ─── EDITABLE ORCHARD DATA (so the Edit button can update specs live) ───
   // We keep the original parsed data intact and work off an editable copy.
@@ -175,10 +186,11 @@ export default function OrchardDetailScreen() {
 
   return (
     <SafeAreaView
-      className={`flex-1 ${isDark ? "bg-slate-950" : "bg-[#f4fbf0]"}`}
+      edges={["bottom"]}
+      className={`flex-1 ${isDark ? "bg-slate-950" : "bg-surface-light"}`}
     >
       <ScrollView
-        className={isDark ? "bg-slate-950" : "bg-[#f4fbf0]"}
+        className={isDark ? "bg-slate-950" : "bg-surface-light"}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom: 40,
@@ -186,24 +198,11 @@ export default function OrchardDetailScreen() {
         }}
       >
         <View
-          className={`flex-1 px-5 pt-4 ${
-            isDark ? "bg-slate-950" : "bg-[#f4fbf0]"
+          className={`flex-1 px-5 ${
+            isDark ? "bg-slate-950" : "bg-surface-light"
           }`}
+          style={{ paddingTop: contentTopPadding }}
         >
-          {/* BACK BUTTON */}
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className={`self-start mt-4 mb-4 w-11 h-11 rounded-full items-center justify-center ${
-              isDark ? "bg-slate-800" : "bg-white"
-            }`}
-          >
-            <Ionicons
-              name="arrow-back"
-              size={20}
-              color={isDark ? "#fff" : "#243022"}
-            />
-          </TouchableOpacity>
-
           {/* HERO */}
           <OrchardHero
             name={orchardData?.name}
@@ -222,7 +221,6 @@ export default function OrchardDetailScreen() {
           <View className="mt-4">
             {activeTab === "home" ? (
               <View className="flex-1 space-y-4">
-
                 {/* --- ORCHARD ADVISORY --- */}
                 <AdvisoryCard />
 
@@ -257,6 +255,29 @@ export default function OrchardDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <BackButton absolute onPress={() => router.back()} style={{ zIndex: 101 }} />
+
+      {/* Centered page title - absolute so it floats above the scroll content.
+          Vertically centered to the floating back button (same top + 44px height wrapper for vertical center).
+          Positioned at same vertical level as back button.
+          zIndex ensures it layers on top of the ScrollView.
+          Themed like homescreen headings (Fonts.bold + brand-text/white colors).
+          Content padding reserves space so hero starts below the title. */}
+      <View
+        className="absolute left-0 right-0 items-center"
+        style={{ top: titleTop, zIndex: 100 }}
+        pointerEvents="box-none"
+      >
+        <View style={{ height: 44, justifyContent: 'center' }}>
+          <Text
+            style={{ fontFamily: Fonts.bold }}
+            className={`text-2xl ${isDark ? "text-white" : "text-brand-text"}`}
+          >
+            Orchard Details
+          </Text>
+        </View>
+      </View>
 
       {/* ═══════════════ EDIT ORCHARD MODAL ═══════════════ */}
       <EditOrchardModal

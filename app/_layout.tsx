@@ -1,6 +1,8 @@
 import "../global.css";
 
 import { Stack } from "expo-router";
+import { useColorScheme } from "react-native";
+import { StatusBar } from "expo-status-bar";
 
 import {
   useFonts,
@@ -19,20 +21,25 @@ export default function Layout() {
     Montserrat_700Bold,
   });
 
+  const isDark = useColorScheme() === "dark";
+  const backgroundColor = isDark ? "#020617" : "#F2F8E8";
+
   if (!fontsLoaded) {
     return null;
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        animation: "slide_from_right",
-        contentStyle: {
-          backgroundColor: "transparent",
-        },
-      }}
-    >
+    <>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: "slide_from_right",
+          contentStyle: {
+            backgroundColor,
+          },
+        }}
+      >
       {/* HOME */}
       <Stack.Screen
         name="home"
@@ -71,6 +78,7 @@ export default function Layout() {
           headerShown: false,
         }}
       />
-    </Stack>
+      </Stack>
+    </>
   );
 }
