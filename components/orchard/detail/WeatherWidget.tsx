@@ -1,11 +1,12 @@
 import React from "react";
 
-import { View, Text, TouchableOpacity, ScrollView, useColorScheme } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, ImageBackground, useColorScheme } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { Path, Circle, Rect, Text as SvgText, Defs, LinearGradient, Stop, G } from "react-native-svg";
+import Svg, { Path, Circle, Text as SvgText, Defs, LinearGradient, Stop, G } from "react-native-svg";
 
 import { Fonts } from "@/theme/fonts";
+import { Colors } from "@/theme/colors";
 import type { DailyForecast, HourlyForecast } from "@/types/weather";
 
 type Point = { x: number; y: number; prob: number; vol: string; label: string };
@@ -48,6 +49,7 @@ export default function WeatherWidget({
   svgHeight: number;
 }) {
   const isDark = useColorScheme() === "dark";
+  const activeTabColor = isDark ? Colors.brandGreenDark : Colors.brandGreen;
 
   return (
     /* ─── NEW HIGH-FIDELITY WEATHER WIDGET SECTION (Matches Photo exactly) ─── */
@@ -59,7 +61,7 @@ export default function WeatherWidget({
                       onPress={() => setWeatherSubTab("today")}
                       className="px-4 py-1.5 rounded-full"
                       style={{
-                        backgroundColor: weatherSubTab === "today" ? "#7a9a60" : "transparent",
+                        backgroundColor: weatherSubTab === "today" ? activeTabColor : "transparent",
                       }}
                     >
                       <Text
@@ -68,8 +70,8 @@ export default function WeatherWidget({
                           weatherSubTab === "today"
                             ? "text-white font-bold"
                             : isDark
-                            ? "text-slate-400 font-semibold"
-                            : "text-[#55624f]/80 font-semibold"
+                            ? "text-gray-300 font-semibold"
+                            : "text-brand-text/80 font-semibold"
                         }
                       >
                         Today
@@ -79,7 +81,7 @@ export default function WeatherWidget({
                       onPress={() => setWeatherSubTab("tomorrow")}
                       className="px-4 py-1.5 rounded-full"
                       style={{
-                        backgroundColor: weatherSubTab === "tomorrow" ? "#7a9a60" : "transparent",
+                        backgroundColor: weatherSubTab === "tomorrow" ? activeTabColor : "transparent",
                       }}
                     >
                       <Text
@@ -88,8 +90,8 @@ export default function WeatherWidget({
                           weatherSubTab === "tomorrow"
                             ? "text-white font-bold"
                             : isDark
-                            ? "text-slate-400 font-semibold"
-                            : "text-[#55624f]/80 font-semibold"
+                            ? "text-gray-300 font-semibold"
+                            : "text-brand-text/80 font-semibold"
                         }
                       >
                         Tomorrow
@@ -99,7 +101,7 @@ export default function WeatherWidget({
                       onPress={() => setWeatherSubTab("nextWeek")}
                       className="px-4 py-1.5 rounded-full"
                       style={{
-                        backgroundColor: weatherSubTab === "nextWeek" ? "#7a9a60" : "transparent",
+                        backgroundColor: weatherSubTab === "nextWeek" ? activeTabColor : "transparent",
                       }}
                     >
                       <Text
@@ -108,8 +110,8 @@ export default function WeatherWidget({
                           weatherSubTab === "nextWeek"
                             ? "text-white font-bold"
                             : isDark
-                            ? "text-slate-400 font-semibold"
-                            : "text-[#55624f]/80 font-semibold"
+                            ? "text-gray-300 font-semibold"
+                            : "text-brand-text/80 font-semibold"
                         }
                       >
                         Next 16 Days
@@ -117,24 +119,15 @@ export default function WeatherWidget({
                     </TouchableOpacity>
                   </View>
 
-                  {/* MAIN GRADIENT WEATHER CARD */}
-                  <View className="bg-[#469e80] dark:bg-slate-900 rounded-[28px] overflow-hidden border border-[#5cb895]/20 dark:border-slate-800 shadow-md relative">
-
-                    {/* SVG Gradient Background */}
-                    <View className="absolute inset-0">
-                      <Svg height="100%" width="100%">
-                        <Defs>
-                          <LinearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
-                            <Stop offset="0%" stopColor="#5cb895" />
-                            <Stop offset="100%" stopColor="#30755d" />
-                          </LinearGradient>
-                        </Defs>
-                        <Rect width="100%" height="100%" fill="url(#bgGrad)" />
-                      </Svg>
-                    </View>
-
-                    {/* Card Content Overlay */}
-                    <View className="p-5 relative">
+                  {/* MAIN WEATHER CARD - uses the same existing dashboard/orchard gradient asset */}
+                  <View className="bg-brand-green dark:bg-brand-green-dark rounded-[28px] overflow-hidden border border-edge-green-soft dark:border-slate-800 shadow-md relative">
+                    <ImageBackground
+                      source={require("../../../assets/images/orchard-gradient-bg.png")}
+                      resizeMode="cover"
+                      className="w-full"
+                    >
+                      {/* Subtle overlay keeps white weather text readable on the shared gradient */}
+                      <View className="bg-black/10 p-5 relative">
 
                       {/* CARD CONTENT HEADER */}
                       <View className="items-center">
@@ -354,7 +347,7 @@ export default function WeatherWidget({
                                       const ampmOnly = timeParts[1] || "";
                                       return (
                                         <G key={idx}>
-                                          <Circle cx={p.x} cy={p.y} r="3" fill="white" stroke="#398871" strokeWidth="1.5" />
+                                          <Circle cx={p.x} cy={p.y} r="3" fill="white" stroke={Colors.brandGreenDark} strokeWidth="1.5" />
                                           <SvgText
                                             x={p.x}
                                             y={p.y - 6}
@@ -482,7 +475,8 @@ export default function WeatherWidget({
                           </TouchableOpacity>
                         </View>
                       )}
-                    </View>
+                      </View>
+                    </ImageBackground>
                   </View>
                 </View>
 

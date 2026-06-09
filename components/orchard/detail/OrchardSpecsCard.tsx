@@ -52,48 +52,29 @@ export default function OrchardSpecsCard({
   orchardData,
   resolvedCity,
   onEdit,
+  onDelete,
 }: {
   orchardData: any;
   resolvedCity: string;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
   const isDark = useColorScheme() === "dark";
 
   return (
     <View className="flex-1 space-y-4">
 
-      {/* Section Header: Orchard Specifications (with Edit button) */}
-      <View className="flex-row items-center justify-between mb-1">
-        <View className="flex-row items-center">
-          <View className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2" />
-          <Text
-            style={{ fontFamily: Fonts.bold }}
-            className={`text-[10px] tracking-[1.2px] uppercase ${
-              isDark ? "text-white/60" : "text-green-900/60"
-            }`}
-          >
-            ORCHARD SPECIFICATIONS
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          onPress={onEdit}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Edit orchard information"
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          className={`flex-row items-center rounded-full px-3 py-1.5 ${
-            isDark ? "bg-emerald-950/40" : "bg-[#e8f5e9]"
+      {/* Section Header: Orchard Specifications */}
+      <View className="flex-row items-center mb-1">
+        <View className="w-1.5 h-1.5 rounded-full bg-brand-green mr-2" />
+        <Text
+          style={{ fontFamily: Fonts.bold }}
+          className={`text-[10px] tracking-[1.2px] uppercase ${
+            isDark ? "text-white/60" : "text-brand-text/60"
           }`}
         >
-          <Ionicons name="create-outline" size={13} color="#469e80" />
-          <Text
-            style={{ fontFamily: Fonts.semibold, color: "#469e80" }}
-            className="text-[10px] tracking-[0.5px] uppercase ml-1"
-          >
-            Edit
-          </Text>
-        </TouchableOpacity>
+          ORCHARD SPECIFICATIONS
+        </Text>
       </View>
 
       {/* Primary Specifications Card (Stacked layout) */}
@@ -158,6 +139,45 @@ export default function OrchardSpecsCard({
           </View>
         </View>
       )}
+
+      {/* Bottom Actions: dashboard-style buttons */}
+      <View className="flex-row mt-2">
+        <TouchableOpacity
+          onPress={onEdit}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Edit orchard information"
+          className={`flex-1 h-12 rounded-2xl flex-row items-center justify-center mr-3 ${
+            isDark ? "bg-brand-green-dark" : "bg-brand-green"
+          }`}
+        >
+          <Ionicons name="create-outline" size={18} color="white" />
+          <Text
+            style={{ fontFamily: Fonts.semibold }}
+            className="text-white ml-2 text-sm"
+          >
+            Edit
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={onDelete}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Delete orchard"
+          className={`flex-1 h-12 rounded-2xl flex-row items-center justify-center ${
+            isDark ? "bg-red-600" : "bg-red-500"
+          }`}
+        >
+          <Ionicons name="trash-outline" size={18} color="white" />
+          <Text
+            style={{ fontFamily: Fonts.semibold }}
+            className="text-white ml-2 text-sm"
+          >
+            Delete
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

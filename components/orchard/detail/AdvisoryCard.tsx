@@ -15,7 +15,7 @@ function AdvisoryIcon() {
   return (
     <View
       className={`w-14 h-14 rounded-full border items-center justify-center ${
-        isDark ? "border-slate-800 bg-slate-900" : "border-[#d8eedf] bg-[#f5fbf7]"
+        isDark ? "border-slate-800 bg-slate-900" : "border-edge-green bg-surface-light"
       }`}
     >
       <View className="items-center justify-center relative w-10 h-10">
@@ -23,7 +23,7 @@ function AdvisoryIcon() {
         <View className="w-[2px] h-3.5 bg-[#8fa499] absolute top-[6px]" />
         <View
           className={`w-6 h-6 rounded-full border absolute bottom-[3px] items-center justify-center ${
-            isDark ? "border-slate-700 bg-slate-950" : "border-[#b8d9c4] bg-white"
+            isDark ? "border-slate-700 bg-slate-950" : "border-edge-green-soft bg-white"
           }`}
         >
           <View className="w-2.5 h-2.5 rounded-full bg-[#ca6a24] shadow-sm" />
@@ -43,11 +43,11 @@ export default function AdvisoryCard() {
   return (
     <View>
       <View className="flex-row items-center mb-2">
-        <View className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2" />
+        <View className="w-1.5 h-1.5 rounded-full bg-brand-green mr-2" />
         <Text
           style={{ fontFamily: Fonts.bold }}
           className={`text-[10px] tracking-[1.2px] uppercase ${
-            isDark ? "text-white/60" : "text-green-900/60"
+            isDark ? "text-white/60" : "text-brand-text/60"
           }`}
         >
           ORCHARD ADVISORY
@@ -57,7 +57,7 @@ export default function AdvisoryCard() {
         className={`rounded-xl border p-3 flex-row items-start ${
           isDark
             ? "bg-slate-900 border-slate-800"
-            : "bg-white border-[#e2f0d9]"
+            : "bg-white border-edge-green"
         }`}
       >
         <View className="mr-3 justify-start items-center pt-1">
@@ -68,7 +68,7 @@ export default function AdvisoryCard() {
             <Text
               style={{ fontFamily: Fonts.bold }}
               className={`text-lg font-bold ${
-                isDark ? "text-white" : "text-[#1b3d2f]"
+                isDark ? "text-white" : "text-brand-text"
               }`}
             >
               Calcium Spray
@@ -86,7 +86,7 @@ export default function AdvisoryCard() {
           <View className="mt-1">
             <View
               className={`flex-row items-center py-2 border-t ${
-                isDark ? "border-slate-800" : "border-[#f1f5f9]"
+                isDark ? "border-slate-800" : "border-edge-green/60"
               }`}
             >
               <Ionicons name="rainy-outline" size={15} color="#3b82f6" />
@@ -101,7 +101,7 @@ export default function AdvisoryCard() {
             </View>
             <View
               className={`flex-row items-center py-2 border-t ${
-                isDark ? "border-slate-800" : "border-[#f1f5f9]"
+                isDark ? "border-slate-800" : "border-edge-green/60"
               }`}
             >
               <Ionicons name="bug-outline" size={15} color="#ef4444" />

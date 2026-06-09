@@ -35,7 +35,7 @@ export default function WeatherStatusBanners({
       {/* Loading Indicator for API updates */}
       {loading && (
         <View className="flex-row items-center justify-center py-4">
-          <ActivityIndicator size="small" color="#009e4f" />
+          <ActivityIndicator size="small" color="#6D8B4F" />
           <Text className="ml-2 text-xs text-slate-500">
             Updating live weather...
           </Text>

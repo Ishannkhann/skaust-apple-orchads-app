@@ -18,10 +18,10 @@ export default function DegreeDaysTile() {
       className={`mt-4 rounded-2xl border px-5 py-4 flex-row items-center justify-between ${
         isDark
           ? "bg-slate-900 border-slate-800"
-          : "bg-white border-[#e2f0d9]"
+          : "bg-white border-edge-green"
       }`}
       style={{
-        shadowColor: isDark ? "#000" : "#6b8f71",
+        shadowColor: isDark ? "#000" : "#6D8B4F",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
@@ -44,7 +44,7 @@ export default function DegreeDaysTile() {
           <Text
             style={{ fontFamily: Fonts.medium }}
             className={`text-[10px] uppercase tracking-[1.2px] ${
-              isDark ? "text-slate-400" : "text-green-900/50"
+              isDark ? "text-slate-400" : "text-brand-text/50"
             }`}
           >
             Growing Degree Days
@@ -52,14 +52,14 @@ export default function DegreeDaysTile() {
           <Text
             style={{ fontFamily: Fonts.bold }}
             className={`text-2xl font-bold mt-0.5 ${
-              isDark ? "text-white" : "text-[#1b3d2f]"
+              isDark ? "text-white" : "text-brand-text"
             }`}
           >
             222.2
             <Text
               style={{ fontFamily: Fonts.medium }}
               className={`text-sm ${
-                isDark ? "text-slate-400" : "text-[#6b8f71]"
+                isDark ? "text-slate-400" : "text-brand-green"
               }`}
             >
               {" "}°C
@@ -69,14 +69,14 @@ export default function DegreeDaysTile() {
       </View>
       <View
         className={`rounded-full px-3 py-1.5 ${
-          isDark ? "bg-emerald-950/30" : "bg-[#e8f5e9]"
+          isDark ? "bg-slate-800" : "bg-surface-track"
         }`}
       >
         <View className="flex-row items-center">
-          <View className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
+          <View className="w-1.5 h-1.5 rounded-full bg-brand-green mr-1.5" />
           <Text
             style={{ fontFamily: Fonts.semibold, fontSize: 10 }}
-            className={isDark ? "text-emerald-400" : "text-[#2d8a56]"}
+            className={isDark ? "text-brand-sage" : "text-brand-green"}
           >
             Active Growing
           </Text>

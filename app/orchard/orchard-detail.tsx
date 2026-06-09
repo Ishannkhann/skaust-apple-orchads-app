@@ -18,6 +18,8 @@ import { Fonts } from "@/theme/fonts";
 import BackButton from "@/components/ui/BackButton";
 
 import { useOrchardWeather } from "@/hooks/useOrchardWeather";
+import { getJSON, removeItem, setJSON, StorageKeys } from "@/lib/storage";
+import type { Orchard } from "@/types/orchard";
 import { interpolateToHourly } from "@/lib/weather";
 import { MOCK_HOURLY, MOCK_DAILY_16_DAYS } from "@/constants/weather";
 import OrchardHero from "@/components/orchard/detail/OrchardHero";
@@ -48,12 +50,6 @@ export default function OrchardDetailScreen() {
   }
   const isDark = useColorScheme() === "dark";
   const insets = useSafeAreaInsets();
-
-  // Back button floats high at its default (insets.top + 12 via the component).
-  // Title is positioned lower independently (like in MyOrchardsHeader/Notifications) so it clears the Dynamic Island.
-  // Hero gets extra top padding so it starts below the title.
-  const titleTop = insets.top + 12;
-  const contentTopPadding = insets.top + 60;
 
   // ─── EDITABLE ORCHARD DATA (so the Edit button can update specs live) ───
   // We keep the original parsed data intact and work off an editable copy.
@@ -87,7 +83,7 @@ export default function OrchardDetailScreen() {
       name: orchardData?.name || "",
       orchardType: orchardData?.orchardType || "",
       variety: orchardData?.variety || "",
-      area: orchardData?.area || "",
+      area: String(orchardData?.area || "").replace(/[^0-9]/g, "").slice(0, 4),
       // Prefer the explicit orchard location, fall back to the API-resolved city.
       location: orchardData?.location || resolvedCity || "",
       message: orchardData?.message || "",
@@ -111,6 +107,50 @@ export default function OrchardDetailScreen() {
       setResolvedCity(editForm.location.trim());
     }
     setShowEditModal(false);
+  };
+
+  const handleDeleteOrchard = () => {
+    const orchardId = orchardData?.id ? String(orchardData.id) : "";
+
+    if (!orchardId) {
+      Alert.alert(
+        "Unable to delete orchard",
+        "This orchard could not be identified. Please go back and try again."
+      );
+      return;
+    }
+
+    Alert.alert(
+      "Delete Orchard",
+      `Are you sure you want to delete ${orchardData?.name || "this orchard"}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const orchards = await getJSON<Orchard[]>(StorageKeys.orchards, []);
+              const updated = orchards.filter(
+                (item) => String(item.id) !== orchardId
+              );
+
+              await setJSON(StorageKeys.orchards, updated);
+              await removeItem(StorageKeys.editingOrchard);
+
+              // Return to the orchard grid so the refreshed list immediately
+              // reflects the deleted orchard.
+              router.replace("/orchard/my-orchards");
+            } catch (error) {
+              Alert.alert(
+                "Delete failed",
+                "We could not delete this orchard. Please try again."
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
   const heroImage = selectedImage || orchardData?.image || null;
@@ -197,11 +237,26 @@ export default function OrchardDetailScreen() {
           flexGrow: 1,
         }}
       >
+        {/* Non-sticky header: scrolls naturally with the detail content */}
         <View
-          className={`flex-1 px-5 ${
+          className="px-5 flex-row items-center"
+          style={{ paddingTop: insets.top + 12 }}
+        >
+          <BackButton onPress={() => router.back()} />
+          <View className="flex-1 items-center pr-11">
+            <Text
+              style={{ fontFamily: Fonts.bold }}
+              className={`text-2xl ${isDark ? "text-white" : "text-brand-text"}`}
+            >
+              Orchard Details
+            </Text>
+          </View>
+        </View>
+
+        <View
+          className={`flex-1 px-5 pt-5 ${
             isDark ? "bg-slate-950" : "bg-surface-light"
           }`}
-          style={{ paddingTop: contentTopPadding }}
         >
           {/* HERO */}
           <OrchardHero
@@ -250,34 +305,12 @@ export default function OrchardDetailScreen() {
                 orchardData={orchardData}
                 resolvedCity={resolvedCity}
                 onEdit={handleEditOrchard}
+                onDelete={handleDeleteOrchard}
               />
             )}
           </View>
         </View>
       </ScrollView>
-
-      <BackButton absolute onPress={() => router.back()} style={{ zIndex: 101 }} />
-
-      {/* Centered page title - absolute so it floats above the scroll content.
-          Vertically centered to the floating back button (same top + 44px height wrapper for vertical center).
-          Positioned at same vertical level as back button.
-          zIndex ensures it layers on top of the ScrollView.
-          Themed like homescreen headings (Fonts.bold + brand-text/white colors).
-          Content padding reserves space so hero starts below the title. */}
-      <View
-        className="absolute left-0 right-0 items-center"
-        style={{ top: titleTop, zIndex: 100 }}
-        pointerEvents="box-none"
-      >
-        <View style={{ height: 44, justifyContent: 'center' }}>
-          <Text
-            style={{ fontFamily: Fonts.bold }}
-            className={`text-2xl ${isDark ? "text-white" : "text-brand-text"}`}
-          >
-            Orchard Details
-          </Text>
-        </View>
-      </View>
 
       {/* ═══════════════ EDIT ORCHARD MODAL ═══════════════ */}
       <EditOrchardModal

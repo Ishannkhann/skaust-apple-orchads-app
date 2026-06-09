@@ -90,7 +90,14 @@ export default function MyOrchardsScreen() {
         renderItem={({ item }) => (
           <MyOrchardCard
             item={item}
-            onPress={() => router.push(`/orchard/${item.id}`)}
+            onPress={() =>
+              router.push({
+                pathname: "/orchard/orchard-detail",
+                params: {
+                  orchard: JSON.stringify(item),
+                },
+              })
+            }
           />
         )}
         ListEmptyComponent={
@@ -114,3 +121,4 @@ export default function MyOrchardsScreen() {
     </SafeAreaView>
   );
 }
+    

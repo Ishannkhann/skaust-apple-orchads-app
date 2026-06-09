@@ -38,7 +38,7 @@ export default function OrchardHero({
     <View
       style={{ height: HERO_HEIGHT }}
       className={`w-full rounded-[32px] overflow-hidden relative ${
-        isDark ? "bg-slate-900" : "bg-[#dfe7d8]"
+        isDark ? "bg-slate-900" : "bg-surface-highlight"
       }`}
     >
       {hasImage ? (
@@ -76,7 +76,7 @@ export default function OrchardHero({
                 className="px-4 py-2 rounded-full bg-white/95 border border-white/40"
               >
                 <Text
-                  style={{ fontFamily: Fonts.semibold, color: "#243022" }}
+                  style={{ fontFamily: Fonts.semibold, color: "#33422A" }}
                   className="text-sm"
                 >
                   Edit Photo
@@ -93,7 +93,7 @@ export default function OrchardHero({
               activeOpacity={0.9}
               className="w-[82%] h-24 rounded-2xl border-2 border-dashed items-center justify-center"
               style={{
-                borderColor: isDark ? "#475569" : "#9fb08f",
+                borderColor: isDark ? "#475569" : "#C8D9AC",
                 backgroundColor: isDark
                   ? "rgba(30, 41, 59, 0.4)"
                   : "rgba(255, 255, 255, 0.3)",
@@ -102,12 +102,12 @@ export default function OrchardHero({
               <Ionicons
                 name="image-outline"
                 size={24}
-                color={isDark ? "#cbd5e1" : "#55624f"}
+                color={isDark ? "#cbd5e1" : "#33422A"}
               />
               <Text
                 style={{ fontFamily: Fonts.medium }}
                 className={`mt-2 text-sm ${
-                  isDark ? "text-slate-300" : "text-[#55624f]"
+                  isDark ? "text-slate-300" : "text-brand-text"
                 }`}
               >
                 Upload Cover
