@@ -8,6 +8,8 @@ import {
   ScrollView,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 
 import * as ImagePicker from "expo-image-picker";
@@ -15,7 +17,6 @@ import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useRouter } from "expo-router";
-
 import { Ionicons } from "@expo/vector-icons";
 
 import { useOrchardDraft } from "@/hooks/useOrchardDraft";
@@ -32,10 +33,6 @@ export default function AddStep3() {
   const isDark = useColorScheme() === "dark";
 
   const { loadDraft, commitOrchard } = useOrchardDraft();
-
-  const CARD = isDark
-    ? "bg-slate-800 border-slate-700"
-    : "bg-white border-edge-green";
 
   const [area, setArea] = useState("");
   const [landType, setLandType] = useState("");
@@ -115,65 +112,82 @@ export default function AddStep3() {
     <SafeAreaView
       className={`flex-1 ${isDark ? "bg-slate-950" : "bg-surface-light"}`}
     >
-      <ScrollView className="px-5">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        className="flex-1"
+      >
+        <View className="flex-1 px-5 pt-5">
+          {/* HEADER */}
+          <StepHeader
+            title="Finish Setup"
+            subtitle="Step 3 of 3 • Area & photo"
+          />
 
-        {/* HEADER */}
-        <View className="mt-6">
-          <StepHeader title="Finish Setup" subtitle="Step 3 of 3" />
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 24 }}
+            className="flex-1 mt-4"
+            keyboardShouldPersistTaps="handled"
+          >
+            <FormField
+              label="Area in Kanals"
+              icon="resize-outline"
+              value={area}
+              onChangeText={(text) =>
+                setArea(text.replace(/[^0-9.]/g, ""))
+              }
+              keyboardType="decimal-pad"
+              placeholder="e.g. 2.22"
+            />
+
+            <DropdownField
+              label="Land Type"
+              icon="terrain-outline"
+              value={landType}
+              placeholder={loaded ? "Select Land Type" : "Loading..."}
+              onPress={openModal}
+            />
+
+            {/* IMAGE */}
+            <TouchableOpacity
+              onPress={pickImage}
+              activeOpacity={0.85}
+              className={`mb-3.5 h-52 rounded-2xl border overflow-hidden items-center justify-center ${
+                isDark
+                  ? "bg-slate-800/60 border-slate-700"
+                  : "bg-white border-edge-green"
+              }`}
+            >
+              {image ? (
+                <Image source={{ uri: image }} className="w-full h-full" />
+              ) : (
+                <>
+                  <Ionicons name="camera-outline" size={36} color="#94a3b8" />
+                  <Text
+                    style={{ fontFamily: Fonts.medium }}
+                    className="text-slate-400 text-sm mt-2"
+                  >
+                    Tap to upload orchard image
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+
+          {/* SAVE */}
+          <PrimaryButton
+            label="Save Orchard"
+            onPress={save}
+            className="mb-4"
+          />
         </View>
-
-        {/* AREA */}
-        <FormField
-          label="Area in Kanals"
-          value={area}
-          onChangeText={setArea}
-          keyboardType="numeric"
-          placeholder="Enter orchard area"
-          containerClassName="mt-6"
-        />
-
-        {/* LAND TYPE */}
-        <DropdownField
-          label="Land Type"
-          value={landType}
-          placeholder={loaded ? "Select Land Type" : "Loading..."}
-          onPress={openModal}
-        />
-
-        {/* IMAGE */}
-        <TouchableOpacity
-          onPress={pickImage}
-          className={`mt-8 h-64 rounded-3xl border overflow-hidden items-center justify-center ${CARD}`}
-        >
-          {image ? (
-            <Image source={{ uri: image }} className="w-full h-full" />
-          ) : (
-            <>
-              <Ionicons name="camera-outline" size={42} color="#6B7280" />
-
-              <Text
-                style={{ fontFamily: Fonts.medium }}
-                className="text-gray-400 mt-3"
-              >
-                Tap to upload orchard image
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-
-        {/* SAVE */}
-        <PrimaryButton
-          label="Save Orchard"
-          onPress={save}
-          className="mt-10 mb-6"
-        />
-
-      </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* MODAL */}
       <SelectModal
         visible={modal}
         onClose={() => setModal(false)}
+        title="Select Land Type"
         options={LAND_TYPE_OPTIONS}
         tempValue={tempLandType}
         onSelect={setTempLandType}

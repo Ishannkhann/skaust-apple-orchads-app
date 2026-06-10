@@ -1,12 +1,9 @@
 export type LocationMap = Record<string, Record<string, string[]>>;
 
 /**
- * Best-effort Kashmir/J&K location hierarchy for dependent dropdowns.
+ * Kashmir / J&K district → block → village hierarchy.
  *
- * Shape:
- * District -> Block -> Villages / localities
- *
- * You can extend or replace this data without changing the form logic.
+ * Extend or replace this data without changing the form logic.
  */
 export const LOCATION_MAP: LocationMap = {
   Anantnag: {
@@ -103,6 +100,20 @@ export const LOCATION_MAP: LocationMap = {
 };
 
 export const DISTRICT_OPTIONS = Object.keys(LOCATION_MAP).sort();
+
+/** Approximate center coordinates for each district (for map animation). */
+export const DISTRICT_COORDS: Record<string, { latitude: number; longitude: number }> = {
+  Anantnag: { latitude: 33.7311, longitude: 75.1512 },
+  Bandipora: { latitude: 34.4216, longitude: 74.6536 },
+  Baramulla: { latitude: 34.1986, longitude: 74.3636 },
+  Budgam: { latitude: 34.0201, longitude: 74.7171 },
+  Ganderbal: { latitude: 34.2167, longitude: 74.7833 },
+  Kulgam: { latitude: 33.6449, longitude: 75.0193 },
+  Kupwara: { latitude: 34.5218, longitude: 74.2587 },
+  Pulwama: { latitude: 33.8744, longitude: 74.8989 },
+  Shopian: { latitude: 33.7227, longitude: 74.8344 },
+  Srinagar: { latitude: 34.0837, longitude: 74.7973 },
+};
 
 export function getBlockOptions(district: string) {
   return district ? Object.keys(LOCATION_MAP[district] ?? {}).sort() : [];

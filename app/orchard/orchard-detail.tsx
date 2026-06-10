@@ -29,6 +29,7 @@ import AdvisoryCard from "@/components/orchard/detail/AdvisoryCard";
 import WeatherStatusBanners from "@/components/orchard/detail/WeatherStatusBanners";
 import OrchardSpecsCard from "@/components/orchard/detail/OrchardSpecsCard";
 import EditOrchardModal from "@/components/orchard/detail/EditOrchardModal";
+import type { EditForm } from "@/components/orchard/detail/EditOrchardModal";
 import WeatherWidget from "@/components/orchard/detail/WeatherWidget";
 
 const { height, width } = Dimensions.get("window");
@@ -68,44 +69,81 @@ export default function OrchardDetailScreen() {
 
   // ─── EDIT ORCHARD MODAL STATE ───
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editForm, setEditForm] = useState({
+  const [editForm, setEditForm] = useState<EditForm>({
     name: "",
+    district: "",
+    block: "",
+    village: "",
     orchardType: "",
     variety: "",
+    soilType: "",
+    age: "",
     area: "",
-    location: "",
-    message: "",
+    landType: "",
+    image: "",
   });
 
-  // Open the modal, pre-filling fields with the current values shown on the card.
+  // Open the modal, pre-filling fields with the current values.
   const handleEditOrchard = () => {
     setEditForm({
       name: orchardData?.name || "",
+      district: orchardData?.district || "",
+      block: orchardData?.block || "",
+      village: orchardData?.village || "",
       orchardType: orchardData?.orchardType || "",
       variety: orchardData?.variety || "",
-      area: String(orchardData?.area || "").replace(/[^0-9]/g, "").slice(0, 4),
-      // Prefer the explicit orchard location, fall back to the API-resolved city.
-      location: orchardData?.location || resolvedCity || "",
-      message: orchardData?.message || "",
+      soilType: orchardData?.soilType || "",
+      age: orchardData?.age || "",
+      area: orchardData?.area || "",
+      landType: orchardData?.landType || "",
+      image: orchardData?.image || "",
     });
     setShowEditModal(true);
   };
 
-  // Save edits → update editable orchardData (specs card updates instantly).
-  const handleSaveOrchard = () => {
-    setOrchardData((prev: any) => ({
-      ...(prev || {}),
+  // Save edits → update local state AND persist to AsyncStorage.
+  const handleSaveOrchard = async () => {
+    const computedLocation = [editForm.village, editForm.block, editForm.district]
+      .filter(Boolean)
+      .join(", ");
+
+    const locationString = computedLocation || orchardData?.location || "";
+
+    const updatedOrchard = {
+      ...(orchardData || {}),
       name: editForm.name.trim(),
+      district: editForm.district,
+      block: editForm.block,
+      village: editForm.village,
       orchardType: editForm.orchardType.trim(),
       variety: editForm.variety.trim(),
+      soilType: editForm.soilType.trim(),
+      age: editForm.age.trim(),
       area: editForm.area.trim(),
-      location: editForm.location.trim(),
-      message: editForm.message.trim(),
-    }));
-    // Keep the weather card's location label in sync if the user changed it.
-    if (editForm.location.trim()) {
-      setResolvedCity(editForm.location.trim());
+      landType: editForm.landType.trim(),
+      image: editForm.image,
+      location: locationString,
+    };
+
+    // Update local state (specs card updates instantly)
+    setOrchardData(updatedOrchard);
+
+    // Keep the weather card's location label in sync
+    if (locationString) {
+      setResolvedCity(locationString);
     }
+
+    // Persist to AsyncStorage
+    try {
+      const orchards = await getJSON<Orchard[]>(StorageKeys.orchards, []);
+      const updated = orchards.map((o) =>
+        String(o.id) === String(updatedOrchard.id) ? updatedOrchard : o,
+      );
+      await setJSON(StorageKeys.orchards, updated);
+    } catch {
+      // Silent fallback — local state is already updated
+    }
+
     setShowEditModal(false);
   };
 

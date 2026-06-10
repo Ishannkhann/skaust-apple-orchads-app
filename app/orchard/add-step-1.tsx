@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useRef } from "react";
+import React, { useCallback, useState, useRef } from "react";
 
 import {
   View,
@@ -15,15 +15,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useRouter } from "expo-router";
-import * as Location from "expo-location";
+import * as ExpoLocation from "expo-location";
+import MapView, { Marker, type Region } from "react-native-maps";
 
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useOrchardDraft } from "@/hooks/useOrchardDraft";
 import {
-  DISTRICT_OPTIONS,
   LOCATION_MAP,
+  DISTRICT_OPTIONS,
+  DISTRICT_COORDS,
   getBlockOptions,
   getVillageOptions,
 } from "@/constants/locationOptions";
@@ -34,8 +36,10 @@ import DropdownField from "@/components/orchard/form/DropdownField";
 import PrimaryButton from "@/components/orchard/form/PrimaryButton";
 import SelectModal from "@/components/orchard/form/SelectModal";
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
 type LocationField = "district" | "block" | "village";
-type OrchardCoords = { latitude: number; longitude: number } | null;
+type Coords = { latitude: number; longitude: number };
 
 type MatchedLocation = {
   district: string;
@@ -44,7 +48,16 @@ type MatchedLocation = {
   confidence: "village" | "block" | "district";
 };
 
-type ReverseGeocodeAddressLike = Record<string, string | null | undefined>;
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const KASHMIR_REGION: Region = {
+  latitude: 34.0837,
+  longitude: 74.7973,
+  latitudeDelta: 1.5,
+  longitudeDelta: 1.5,
+};
+
+// ─── Reverse-geocode matching helpers ────────────────────────────────────────
 
 function normalizeLocationName(value: string) {
   return value
@@ -54,60 +67,47 @@ function normalizeLocationName(value: string) {
     .trim();
 }
 
-function buildAddressCandidates(address: ReverseGeocodeAddressLike) {
+function buildAddressCandidates(
+  address: Record<string, string | null | undefined>,
+) {
   const rawValues = Object.values(address)
     .filter(
-      (value): value is string =>
-        typeof value === "string" && value.trim().length > 0
+      (v): v is string => typeof v === "string" && v.trim().length > 0,
     )
-    .flatMap((value) => [
-      value,
-      ...value.split(","),
-      ...value.split("/"),
-      ...value.split("-"),
-    ]);
+    .flatMap((v) => [v, ...v.split(","), ...v.split("/"), ...v.split("-")]);
 
   return rawValues
     .map(normalizeLocationName)
-    .filter((value) => value.length > 0);
+    .filter((v) => v.length > 0);
 }
 
 function candidateMatches(candidates: string[], option: string) {
-  const normalizedOption = normalizeLocationName(option);
-  if (!normalizedOption) return false;
+  const norm = normalizeLocationName(option);
+  if (!norm) return false;
 
-  return candidates.some((candidate) => {
-    if (candidate === normalizedOption) return true;
-
-    if (normalizedOption.length >= 4 && candidate.includes(normalizedOption)) {
-      return true;
-    }
-
-    if (candidate.length >= 4 && normalizedOption.includes(candidate)) {
-      return true;
-    }
-
+  return candidates.some((c) => {
+    if (c === norm) return true;
+    if (norm.length >= 4 && c.includes(norm)) return true;
+    if (c.length >= 4 && norm.includes(c)) return true;
     return false;
   });
 }
 
-function matchReverseGeocodeAddressToLocationOptions(
-  address: ReverseGeocodeAddressLike
+function matchAddressToLocationOptions(
+  address: Record<string, string | null | undefined>,
 ): MatchedLocation | null {
   const candidates = buildAddressCandidates(address);
-
   if (candidates.length === 0) return null;
 
   let districtOnlyMatch: MatchedLocation | null = null;
   let blockMatch: MatchedLocation | null = null;
 
   for (const district of DISTRICT_OPTIONS) {
-    const districtMatched = candidateMatches(candidates, district);
+    const districtHit = candidateMatches(candidates, district);
     const blocks = LOCATION_MAP[district];
-
     if (!blocks) continue;
 
-    if (districtMatched && !districtOnlyMatch) {
+    if (districtHit && !districtOnlyMatch) {
       districtOnlyMatch = {
         district,
         block: "",
@@ -117,9 +117,9 @@ function matchReverseGeocodeAddressToLocationOptions(
     }
 
     for (const block of Object.keys(blocks)) {
-      const blockMatched = candidateMatches(candidates, block);
+      const blockHit = candidateMatches(candidates, block);
 
-      if ((districtMatched || blockMatched) && blockMatched && !blockMatch) {
+      if ((districtHit || blockHit) && blockHit && !blockMatch) {
         blockMatch = {
           district,
           block,
@@ -130,12 +130,7 @@ function matchReverseGeocodeAddressToLocationOptions(
 
       for (const village of blocks[block]) {
         if (candidateMatches(candidates, village)) {
-          return {
-            district,
-            block,
-            village,
-            confidence: "village",
-          };
+          return { district, block, village, confidence: "village" };
         }
       }
     }
@@ -144,107 +139,7 @@ function matchReverseGeocodeAddressToLocationOptions(
   return blockMatch ?? districtOnlyMatch;
 }
 
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return "Unknown location error";
-  }
-}
-
-async function getPositionFromWatcher() {
-  return new Promise<Location.LocationObject>((resolve, reject) => {
-    let subscription: Location.LocationSubscription | null = null;
-    let settled = false;
-
-    const cleanup = () => {
-      subscription?.remove();
-    };
-
-    const timeout = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      reject(new Error("Location watcher timed out"));
-    }, 15000);
-
-    Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.Lowest,
-        timeInterval: 1000,
-        distanceInterval: 0,
-      },
-      (position) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timeout);
-        cleanup();
-        resolve(position);
-      }
-    )
-      .then((sub) => {
-        subscription = sub;
-      })
-      .catch((error) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timeout);
-        reject(error);
-      });
-  });
-}
-
-async function getBestAvailablePosition() {
-  const errors: string[] = [];
-
-  // 1) Try the simplest Expo call first. This is often the most reliable on
-  // iOS Simulator when a simulated location is already selected.
-  try {
-    return await Location.getCurrentPositionAsync({});
-  } catch (error) {
-    errors.push(`default: ${getErrorMessage(error)}`);
-  }
-
-  // 2) Try cached coordinates next. This is fast if iOS/Android already has a
-  // recent provider location.
-  try {
-    const cachedPosition = await Location.getLastKnownPositionAsync({
-      maxAge: 1000 * 60 * 60,
-    });
-
-    if (cachedPosition) return cachedPosition;
-    errors.push("cached: no cached position");
-  } catch (error) {
-    errors.push(`cached: ${getErrorMessage(error)}`);
-  }
-
-  // 3) Try explicit accuracy levels.
-  const attempts = [
-    Location.Accuracy.Lowest,
-    Location.Accuracy.Low,
-    Location.Accuracy.Balanced,
-  ];
-
-  for (const accuracy of attempts) {
-    try {
-      return await Location.getCurrentPositionAsync({ accuracy });
-    } catch (error) {
-      errors.push(`accuracy ${accuracy}: ${getErrorMessage(error)}`);
-    }
-  }
-
-  // 4) Final fallback: briefly watch for a provider update.
-  try {
-    return await getPositionFromWatcher();
-  } catch (error) {
-    errors.push(`watch: ${getErrorMessage(error)}`);
-  }
-
-  throw new Error(errors.join(" | "));
-}
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function AddStep1() {
   const router = useRouter();
@@ -252,38 +147,52 @@ export default function AddStep1() {
 
   const { loadDraft, saveStep } = useOrchardDraft();
 
+  // Form state
   const [name, setName] = useState("");
   const [district, setDistrict] = useState("");
   const [block, setBlock] = useState("");
   const [village, setVillage] = useState("");
-  const [coords, setCoords] = useState<OrchardCoords>(null);
-  const [locationLoading, setLocationLoading] = useState(false);
 
-  const [activeDropdown, setActiveDropdown] = useState<LocationField | null>(null);
+  // Map state
+  const mapRef = useRef<MapView>(null);
+  const [marker, setMarker] = useState<Coords | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+
+  // Dropdown modal state
+  const [activeDropdown, setActiveDropdown] = useState<LocationField | null>(
+    null,
+  );
   const [tempValue, setTempValue] = useState("");
+  const [locationSearch, setLocationSearch] = useState("");
 
-  // ✅ FIX: prevent unnecessary rehydration overwrite
+  // Draft hydration guard
   const hasLoadedRef = useRef(false);
 
-  const blockOptions = useMemo(() => getBlockOptions(district), [district]);
-  const villageOptions = useMemo(
-    () => getVillageOptions(district, block),
-    [district, block]
-  );
+  // ─── Derived data ──────────────────────────────────────────────────
 
-  const dropdownOptions = useMemo(() => {
+  const blockOptions = getBlockOptions(district);
+  const villageOptions = getVillageOptions(district, block);
+
+  const dropdownOptions = (() => {
     if (activeDropdown === "district") return DISTRICT_OPTIONS;
     if (activeDropdown === "block") return blockOptions;
     if (activeDropdown === "village") return villageOptions;
     return [];
-  }, [activeDropdown, blockOptions, villageOptions]);
+  })();
+
+  const filteredDropdownOptions = locationSearch.trim()
+    ? dropdownOptions.filter((o) =>
+        o.toLowerCase().includes(locationSearch.trim().toLowerCase()),
+      )
+    : dropdownOptions;
+
+  // ─── Load draft on focus ──────────────────────────────────────────
 
   useFocusEffect(
     useCallback(() => {
       const loadData = async () => {
         const { data } = await loadDraft();
 
-        // ✅ EDIT MODE / CREATE MODE (draft present)
         if (data) {
           setName(data.name || "");
           setDistrict(data.district || "");
@@ -291,139 +200,57 @@ export default function AddStep1() {
           setVillage(data.village || "");
 
           if (data.latitude && data.longitude) {
-            setCoords({
+            const c = {
               latitude: Number(data.latitude),
               longitude: Number(data.longitude),
-            });
+            };
+            setMarker(c);
+            mapRef.current?.animateCamera(
+              { center: c, zoom: 12 },
+              { duration: 500 },
+            );
           }
 
           hasLoadedRef.current = true;
           return;
         }
 
-        // 🆕 TRUE FRESH START
         if (!hasLoadedRef.current) {
           setName("");
           setDistrict("");
           setBlock("");
           setVillage("");
-          setCoords(null);
-
+          setMarker(null);
           hasLoadedRef.current = true;
         }
       };
 
       loadData();
-    }, [])
+    }, []),
   );
 
-  const validate = () => {
-    if (!name.trim()) {
-      Alert.alert("Missing Field", "Orchard Name is required");
-      return false;
-    }
+  // ─── Map interaction ──────────────────────────────────────────────
 
-    if (!district.trim()) {
-      Alert.alert("Missing Field", "District is required");
-      return false;
-    }
-
-    if (!block.trim()) {
-      Alert.alert("Missing Field", "Block is required");
-      return false;
-    }
-
-    if (!village.trim()) {
-      Alert.alert("Missing Field", "Village is required");
-      return false;
-    }
-
-    return true;
-  };
-
-  const useCurrentLocation = async () => {
-    if (locationLoading) return;
-
-    setLocationLoading(true);
-
+  const reverseGeocodeAndMatch = async (coords: Coords) => {
     try {
-      const servicesEnabled = await Location.hasServicesEnabledAsync();
-
-      if (!servicesEnabled) {
-        Alert.alert(
-          "Location Services Off",
-          "Please turn on device location services, then try again. You can still select district, block, and village manually."
-        );
-        return;
-      }
-
-      const { status } = await Location.requestForegroundPermissionsAsync();
-
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission Required",
-          "Please allow location access to detect your orchard location. You can still select district, block, and village manually."
-        );
-        return;
-      }
-
-      // Android can have GPS enabled but network location disabled. This prompts
-      // the user to improve provider accuracy instead of failing immediately.
-      if (Platform.OS === "android") {
-        try {
-          await Location.enableNetworkProviderAsync();
-        } catch {
-          // Non-fatal: continue with the available provider/manual fallback.
-        }
-      }
-
-      const position = await getBestAvailablePosition();
-
-      const currentCoords = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      };
-
-      setCoords(currentCoords);
-
-      let address: Location.LocationGeocodedAddress | undefined;
-
-      try {
-        [address] = await Location.reverseGeocodeAsync(currentCoords);
-      } catch {
-        Alert.alert(
-          "Address Not Found",
-          "We detected your coordinates, but could not convert them into an address. Please select district, block, and village manually."
-        );
-        return;
-      }
+      const [address] = await ExpoLocation.reverseGeocodeAsync(coords);
 
       if (!address) {
         Alert.alert(
           "Address Not Found",
-          "We detected your coordinates, but could not find a matching address. Please select district, block, and village manually."
+          "Could not convert map coordinates to an address. Please select district, block, and village manually.",
         );
         return;
       }
 
-      let match: MatchedLocation | null = null;
-
-      try {
-        match = matchReverseGeocodeAddressToLocationOptions(
-          address as Record<string, string | null | undefined>
-        );
-      } catch (matchError) {
-        Alert.alert(
-          "Location Match Error",
-          `We detected your coordinates, but could not compare the address with the district/block/village list. Please select the fields manually.\n\nDetails: ${getErrorMessage(matchError)}`
-        );
-        return;
-      }
+      const match = matchAddressToLocationOptions(
+        address as Record<string, string | null | undefined>,
+      );
 
       if (!match) {
         Alert.alert(
           "No Match Found",
-          "We detected your location, but could not match it to the district/block/village list. Please select the fields manually."
+          "The map location does not match any known district/block/village. Please select manually.",
         );
         return;
       }
@@ -435,62 +262,95 @@ export default function AddStep1() {
       if (match.confidence === "village") {
         Alert.alert(
           "Location Detected",
-          `We matched your location as ${match.village}, ${match.block}, ${match.district}. You can correct it manually if needed.`
+          `Matched: ${match.village}, ${match.block}, ${match.district}`,
         );
-        return;
-      }
-
-      if (match.confidence === "block") {
+      } else if (match.confidence === "block") {
         Alert.alert(
-          "Partial Location Detected",
-          `We matched your district and block as ${match.block}, ${match.district}. Please select the village manually if needed.`
+          "Partial Match",
+          `Matched block: ${match.block}, ${match.district}. Please select the village.`,
         );
-        return;
+      } else {
+        Alert.alert(
+          "Partial Match",
+          `Matched district: ${match.district}. Please select block and village.`,
+        );
       }
-
+    } catch {
       Alert.alert(
-        "Partial Location Detected",
-        `We matched your district as ${match.district}. Please select block and village manually.`
+        "Geocoding Error",
+        "Could not determine the address. Please select district, block, and village manually.",
       );
-    } catch (error) {
-      let providerDetails = "";
-
-      try {
-        const providerStatus = await Location.getProviderStatusAsync();
-        providerDetails = `\n\nProvider status: ${JSON.stringify(providerStatus)}`;
-      } catch {
-        providerDetails = "";
-      }
-
-      Alert.alert(
-        "Location Error",
-        `${
-          Platform.OS === "ios"
-            ? "Could not detect your location automatically. If you are using the iOS Simulator, confirm Features > Location has a custom location selected."
-            : Platform.OS === "android"
-            ? "Could not detect your location automatically. If you are using an emulator, set a mock location from Extended Controls > Location."
-            : "Could not detect your location automatically."
-        } You can also select district, block, and village manually.\n\nNative error: ${getErrorMessage(
-          error
-        )}${providerDetails}`
-      );
-    } finally {
-      setLocationLoading(false);
     }
   };
+
+  const handleMapPress = async (e: { nativeEvent: { coordinate: Coords } }) => {
+    const coord = e.nativeEvent.coordinate;
+    setMarker(coord);
+    await reverseGeocodeAndMatch(coord);
+  };
+
+  const handleMarkerDragEnd = async (
+    e: { nativeEvent: { coordinate: Coords } },
+  ) => {
+    const coord = e.nativeEvent.coordinate;
+    setMarker(coord);
+    await reverseGeocodeAndMatch(coord);
+  };
+
+  // ─── "Use My Location" ────────────────────────────────────────────
+
+  const useMyLocation = async () => {
+    if (gpsLoading) return;
+    setGpsLoading(true);
+
+    try {
+      const { status } =
+        await ExpoLocation.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Please allow location access to centre the map on your position.",
+        );
+        return;
+      }
+
+      const position = await ExpoLocation.getCurrentPositionAsync({});
+      const coords: Coords = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      };
+
+      setMarker(coords);
+      mapRef.current?.animateCamera(
+        { center: coords, zoom: 12 },
+        { duration: 600 },
+      );
+
+      await reverseGeocodeAndMatch(coords);
+    } catch {
+      Alert.alert(
+        "Location Error",
+        "Could not detect your location. You can still tap the map to pick a point.",
+      );
+    } finally {
+      setGpsLoading(false);
+    }
+  };
+
+  // ─── Dropdown modal handlers ──────────────────────────────────────
 
   const openDropdown = (field: LocationField) => {
     if (field === "block" && !district) {
       Alert.alert("Select District", "Please select a district first.");
       return;
     }
-
     if (field === "village" && !block) {
       Alert.alert("Select Block", "Please select a block first.");
       return;
     }
 
     setActiveDropdown(field);
+    setLocationSearch("");
 
     if (field === "district") setTempValue(district);
     if (field === "block") setTempValue(block);
@@ -500,6 +360,7 @@ export default function AddStep1() {
   const closeDropdown = () => {
     setActiveDropdown(null);
     setTempValue("");
+    setLocationSearch("");
   };
 
   const confirmSelection = () => {
@@ -510,17 +371,37 @@ export default function AddStep1() {
       setBlock("");
       setVillage("");
     }
-
     if (activeDropdown === "block") {
       setBlock(tempValue);
       setVillage("");
     }
-
     if (activeDropdown === "village") {
       setVillage(tempValue);
     }
 
     closeDropdown();
+  };
+
+  // ─── Validation & save ────────────────────────────────────────────
+
+  const validate = () => {
+    if (!name.trim()) {
+      Alert.alert("Missing Field", "Orchard Name is required");
+      return false;
+    }
+    if (!district.trim()) {
+      Alert.alert("Missing Field", "District is required");
+      return false;
+    }
+    if (!block.trim()) {
+      Alert.alert("Missing Field", "Block is required");
+      return false;
+    }
+    if (!village.trim()) {
+      Alert.alert("Missing Field", "Village is required");
+      return false;
+    }
+    return true;
   };
 
   const saveAndNext = async () => {
@@ -532,12 +413,14 @@ export default function AddStep1() {
       block: block.trim(),
       village: village.trim(),
       location: [village, block, district].filter(Boolean).join(", "),
-      latitude: coords?.latitude,
-      longitude: coords?.longitude,
+      latitude: marker?.latitude,
+      longitude: marker?.longitude,
     });
 
     router.push("/orchard/add-step-2");
   };
+
+  // ─── Render ───────────────────────────────────────────────────────
 
   return (
     <SafeAreaView
@@ -548,7 +431,6 @@ export default function AddStep1() {
         className="flex-1"
       >
         <View className="flex-1 px-5 pt-5">
-
           {/* HEADER */}
           <StepHeader
             title="Add Orchard"
@@ -557,92 +439,93 @@ export default function AddStep1() {
 
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 50 }}
-            className="flex-1 mt-6"
+            contentContainerStyle={{ paddingBottom: 24 }}
+            className="flex-1 mt-4"
+            keyboardShouldPersistTaps="handled"
           >
-            <View>
+            {/* ── MAP ──────────────────────────────────────────────── */}
+            <View
+              className={`rounded-2xl border overflow-hidden ${
+                isDark ? "border-slate-700" : "border-edge-green"
+              }`}
+            >
+              <MapView
+                ref={mapRef}
+                style={{ height: 200 }}
+                initialRegion={KASHMIR_REGION}
+                onPress={handleMapPress}
+                scrollEnabled
+                zoomEnabled
+              >
+                {marker && (
+                  <Marker
+                    coordinate={marker}
+                    draggable
+                    onDragEnd={handleMarkerDragEnd}
+                    pinColor="#6D8B4F"
+                  />
+                )}
+              </MapView>
+
+              {/* Use My Location overlay */}
+              <TouchableOpacity
+                onPress={useMyLocation}
+                disabled={gpsLoading}
+                activeOpacity={0.85}
+                className={`absolute bottom-3 right-3 flex-row items-center rounded-full px-3 py-2 ${
+                  isDark ? "bg-slate-900/90" : "bg-white/90"
+                }`}
+                style={{
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 3,
+                  elevation: 3,
+                }}
+              >
+                {gpsLoading ? (
+                  <ActivityIndicator size="small" color="#6D8B4F" />
+                ) : (
+                  <Ionicons name="locate" size={16} color="#6D8B4F" />
+                )}
+                <Text
+                  style={{ fontFamily: Fonts.semibold, fontSize: 12 }}
+                  className={`ml-1.5 ${isDark ? "text-white" : "text-brand-text"}`}
+                >
+                  {gpsLoading ? "Locating…" : "My Location"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* ── FORM FIELDS ──────────────────────────────────────── */}
+            <View className="mt-4">
               <FormField
-                label="Orchard Name *"
-                placeholder="Enter orchard name"
+                label="Orchard Name"
+                icon="leaf-outline"
+                placeholder="e.g. Valley Orchard"
                 value={name}
                 onChangeText={setName}
               />
 
-              <View
-                className={`mt-8 rounded-3xl border p-4 ${
-                  isDark
-                    ? "bg-slate-900 border-slate-800"
-                    : "bg-white border-edge-green"
-                }`}
-              >
-                <View className="flex-row items-center mb-1">
-                  <View className="w-9 h-9 rounded-full bg-surface-track dark:bg-slate-800 items-center justify-center mr-3">
-                    <Ionicons name="location-outline" size={18} color="#6D8B4F" />
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      style={{ fontFamily: Fonts.bold }}
-                      className={`text-base ${
-                        isDark ? "text-white" : "text-brand-text"
-                      }`}
-                    >
-                      Current Location
-                    </Text>
-                    <Text
-                      style={{ fontFamily: Fonts.medium }}
-                      className={`text-xs mt-0.5 ${
-                        isDark ? "text-slate-400" : "text-brand-green"
-                      }`}
-                    >
-                      Detect automatically or select manually below.
-                    </Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  onPress={useCurrentLocation}
-                  disabled={locationLoading}
-                  activeOpacity={0.85}
-                  className={`mt-4 rounded-2xl py-4 flex-row items-center justify-center ${
-                    locationLoading
-                      ? isDark
-                        ? "bg-slate-700"
-                        : "bg-gray-300"
-                      : isDark
-                      ? "bg-brand-green-dark"
-                      : "bg-brand-green"
-                  }`}
-                >
-                  {locationLoading ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <Ionicons name="locate-outline" size={20} color="white" />
-                  )}
-                  <Text
-                    style={{ fontFamily: Fonts.semibold }}
-                    className="text-white text-base ml-2"
-                  >
-                    {locationLoading ? "Detecting location..." : "Use Current Location"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
               <DropdownField
-                label="District *"
+                label="District"
+                icon="location-outline"
                 placeholder="Select district"
                 value={district}
                 onPress={() => openDropdown("district")}
               />
 
               <DropdownField
-                label="Block *"
+                label="Block"
+                icon="map-outline"
                 placeholder={district ? "Select block" : "Select district first"}
                 value={block}
                 onPress={() => openDropdown("block")}
               />
 
               <DropdownField
-                label="Village *"
+                label="Village"
+                icon="home-outline"
                 placeholder={block ? "Select village" : "Select block first"}
                 value={village}
                 onPress={() => openDropdown("village")}
@@ -651,17 +534,30 @@ export default function AddStep1() {
           </ScrollView>
 
           {/* BUTTON */}
-          <PrimaryButton label="Next" onPress={saveAndNext} className="mb-4" />
-
+          <PrimaryButton
+            label="Next"
+            onPress={saveAndNext}
+            className="mb-4"
+          />
         </View>
       </KeyboardAvoidingView>
 
+      {/* ── SELECT MODAL ──────────────────────────────────────────── */}
       <SelectModal
         visible={!!activeDropdown}
         onClose={closeDropdown}
-        options={dropdownOptions}
+        title={
+          activeDropdown === "district"
+            ? "Select District"
+            : activeDropdown === "block"
+            ? "Select Block"
+            : "Select Village"
+        }
+        options={filteredDropdownOptions}
         multiSelect={false}
-        searchable={false}
+        searchable
+        searchQuery={locationSearch}
+        onSearchChange={setLocationSearch}
         tempValue={tempValue}
         onSelect={setTempValue}
         onConfirm={confirmSelection}
