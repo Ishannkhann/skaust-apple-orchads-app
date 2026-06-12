@@ -363,7 +363,7 @@ export default function AddStep1() {
     setLocationSearch("");
   };
 
-  const confirmSelection = () => {
+  const confirmSelection = async () => {
     if (!activeDropdown || !tempValue) return;
 
     if (activeDropdown === "district") {
@@ -377,9 +377,43 @@ export default function AddStep1() {
     }
     if (activeDropdown === "village") {
       setVillage(tempValue);
+
+      // Auto-geocode village if no marker is placed yet
+      if (!marker) {
+        await geocodeSelectedVillage(tempValue, block, district);
+      }
     }
 
     closeDropdown();
+  };
+
+  // ─── Auto Geocode Village ────────────────────────────────────────
+  const geocodeSelectedVillage = async (
+    village: string,
+    block: string,
+    district: string,
+  ) => {
+    try {
+      const searchQuery = [village, block, district].filter(Boolean).join(", ");
+
+      const results = await ExpoLocation.geocodeAsync(searchQuery);
+
+      if (results.length > 0) {
+        const coords = {
+          latitude: results[0].latitude,
+          longitude: results[0].longitude,
+        };
+
+        setMarker(coords);
+        mapRef.current?.animateCamera(
+          { center: coords, zoom: 12 },
+          { duration: 600 },
+        );
+      }
+    } catch (error) {
+      // Silent fail — user can still manually place marker
+      console.log("Auto-geocode failed:", error);
+    }
   };
 
   // ─── Validation & save ────────────────────────────────────────────
@@ -499,6 +533,14 @@ export default function AddStep1() {
 
             {/* ── FORM FIELDS ──────────────────────────────────────── */}
             <View className="mt-4">
+              {!marker && (
+                <Text
+                  style={{ fontFamily: Fonts.medium }}
+                  className="text-[12px] text-brand-green mb-3 px-1"
+                >
+                  Tip: Tap the map or select a village to automatically set coordinates (required for Degree Days).
+                </Text>
+              )}
               <FormField
                 label="Orchard Name"
                 icon="leaf-outline"

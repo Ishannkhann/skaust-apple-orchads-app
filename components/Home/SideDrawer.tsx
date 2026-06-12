@@ -15,6 +15,9 @@ import {
   User,
   LogOut,
   Sprout,
+  Mail,
+  Phone,
+  FileText,
 } from "lucide-react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -99,6 +102,26 @@ export default function SideDrawer({
 
       onPress: () => {
         onClose();
+      },
+    },
+
+    {
+      title: "Contact Us",
+      icon: Mail,
+
+      onPress: () => {
+        onClose();
+        router.push("/contact");
+      },
+    },
+
+    {
+      title: "Terms & Conditions",
+      icon: FileText,
+
+      onPress: () => {
+        onClose();
+        router.push("/terms");
       },
     },
   ];

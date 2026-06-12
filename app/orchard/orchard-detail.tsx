@@ -21,9 +21,10 @@ import { useOrchardWeather } from "@/hooks/useOrchardWeather";
 import { getJSON, removeItem, setJSON, StorageKeys } from "@/lib/storage";
 import type { Orchard } from "@/types/orchard";
 import { interpolateToHourly } from "@/lib/weather";
-import { MOCK_HOURLY, MOCK_DAILY_16_DAYS } from "@/constants/weather";
+import { MOCK_HOURLY, getMockDailyForecast } from "@/constants/weather";
 import OrchardHero from "@/components/orchard/detail/OrchardHero";
 import DegreeDaysTile from "@/components/orchard/detail/DegreeDaysTile";
+import { useHistoricalDegreeDays } from "@/hooks/useHistoricalDegreeDays";
 import DetailTabs from "@/components/orchard/detail/DetailTabs";
 import AdvisoryCard from "@/components/orchard/detail/AdvisoryCard";
 import WeatherStatusBanners from "@/components/orchard/detail/WeatherStatusBanners";
@@ -216,9 +217,22 @@ export default function OrchardDetailScreen() {
   };
 
   // DEFENSIVE FALLBACKS
-  const dailyForecastList = (weatherData.daily && weatherData.daily.length > 0)
+  const dailyForecastList = Array.isArray(weatherData.daily) && weatherData.daily.length > 0
     ? weatherData.daily
-    : MOCK_DAILY_16_DAYS;
+    : getMockDailyForecast();
+
+  // ─── HISTORICAL GROWING DEGREE DAYS (from 1 Jan 2026 using One Call 3.0) ───
+  const {
+    gdd,
+    hasData,
+    status,
+    statusColor,
+    loading: gddLoading,
+    error: gddError,
+  } = useHistoricalDegreeDays(
+    orchardData?.latitude,
+    orchardData?.longitude
+  );
   const hourlyForecastList = (weatherData.hourly && weatherData.hourly.length > 0)
     ? weatherData.hourly
     : MOCK_HOURLY;
@@ -304,10 +318,17 @@ export default function OrchardDetailScreen() {
             onUpload={handleUpload}
           />
 
-          {/* ─── DEGREE DAYS TILE ─── */}
-          <DegreeDaysTile />
+          {/* DEGREE DAYS - Historical (One Call 3.0) */}
+          <DegreeDaysTile
+            gdd={gdd}
+            hasData={hasData}
+            status={status}
+            statusColor={statusColor}
+            loading={gddLoading}
+            missingCoordinates={!orchardData?.latitude || !orchardData?.longitude}
+          />
 
-          {/* TABS SELECTOR */}
+          {/* TABS - Single instance */}
           <DetailTabs activeTab={activeTab} onChange={setActiveTab} />
 
           {/* TAB CONTENT */}

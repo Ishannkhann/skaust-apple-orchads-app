@@ -1,16 +1,33 @@
 import React from "react";
 
-import { View, Text, useColorScheme } from "react-native";
+import { View, Text, useColorScheme, ActivityIndicator } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 
 import { Fonts } from "@/theme/fonts";
 
+interface DegreeDaysTileProps {
+  gdd: number;
+  hasData: boolean;
+  status: string;
+  statusColor: string;
+  loading?: boolean;
+  missingCoordinates?: boolean;
+}
+
 /**
- * "Growing Degree Days" summary tile on orchard-detail.
- * Markup/classes copied verbatim from the screen (static content).
+ * Functional Growing Degree Days tile.
+ * Supports both forecast-based and historical (One Call 3.0) GDD.
+ * Shows loading state while fetching historical data.
  */
-export default function DegreeDaysTile() {
+export default function DegreeDaysTile({
+  gdd,
+  hasData,
+  status,
+  statusColor,
+  loading = false,
+  missingCoordinates = false,
+}: DegreeDaysTileProps) {
   const isDark = useColorScheme() === "dark";
 
   return (
@@ -40,6 +57,7 @@ export default function DegreeDaysTile() {
             color={isDark ? "#fbbf24" : "#d97706"}
           />
         </View>
+
         <View>
           <Text
             style={{ fontFamily: Fonts.medium }}
@@ -49,39 +67,69 @@ export default function DegreeDaysTile() {
           >
             Growing Degree Days
           </Text>
-          <Text
-            style={{ fontFamily: Fonts.bold }}
-            className={`text-2xl font-bold mt-0.5 ${
-              isDark ? "text-white" : "text-brand-text"
-            }`}
-          >
-            222.2
+
+          {loading ? (
+            <View className="flex-row items-center mt-1">
+              <ActivityIndicator
+                size="small"
+                color={isDark ? "#fbbf24" : "#d97706"}
+              />
+              <Text
+                style={{ fontFamily: Fonts.medium }}
+                className="ml-2 text-sm text-brand-green"
+              >
+                Calculating...
+              </Text>
+            </View>
+          ) : (
             <Text
-              style={{ fontFamily: Fonts.medium }}
-              className={`text-sm ${
-                isDark ? "text-slate-400" : "text-brand-green"
+              style={{ fontFamily: Fonts.bold }}
+              className={`text-2xl font-bold mt-0.5 ${
+                isDark ? "text-white" : "text-brand-text"
               }`}
             >
-              {" "}°C
+              {hasData ? gdd.toFixed(1) : "—"}
+              <Text
+                style={{ fontFamily: Fonts.medium }}
+                className={`text-sm ${
+                  isDark ? "text-slate-400" : "text-brand-green"
+                }`}
+              >
+                {" "}°C
+              </Text>
             </Text>
-          </Text>
+          )}
+
+          {!loading && !hasData && (
+            <Text className="text-[10px] text-red-500 mt-0.5">
+              {missingCoordinates
+                ? "Location coordinates required"
+                : "No weather data"}
+            </Text>
+          )}
         </View>
       </View>
-      <View
-        className={`rounded-full px-3 py-1.5 ${
-          isDark ? "bg-slate-800" : "bg-surface-track"
-        }`}
-      >
-        <View className="flex-row items-center">
-          <View className="w-1.5 h-1.5 rounded-full bg-brand-green mr-1.5" />
-          <Text
-            style={{ fontFamily: Fonts.semibold, fontSize: 10 }}
-            className={isDark ? "text-brand-sage" : "text-brand-green"}
-          >
-            Active Growing
-          </Text>
+
+      {!loading && (
+        <View
+          className={`rounded-full px-3 py-1.5 ${
+            isDark ? "bg-slate-800" : "bg-surface-track"
+          }`}
+        >
+          <View className="flex-row items-center">
+            <View
+              className="w-1.5 h-1.5 rounded-full mr-1.5"
+              style={{ backgroundColor: statusColor }}
+            />
+            <Text
+              style={{ fontFamily: Fonts.semibold, fontSize: 10 }}
+              className={isDark ? "text-brand-sage" : "text-brand-green"}
+            >
+              {status}
+            </Text>
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }

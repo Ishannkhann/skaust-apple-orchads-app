@@ -155,9 +155,19 @@ export default function WeatherWidget({
                           className="text-white/80 text-[10px] mt-0.5"
                         >
                           {weatherSubTab === "today"
-                            ? "25 May 2026 Monday"
+                            ? new Date().toLocaleDateString([], {
+                                weekday: "long",
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric"
+                              })
                             : weatherSubTab === "tomorrow"
-                            ? "26 May 2026 Tuesday"
+                            ? new Date(Date.now() + 86400000).toLocaleDateString([], {
+                                weekday: "long",
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric"
+                              })
                             : "Next 16 Days Overview"}
                         </Text>
                       </View>

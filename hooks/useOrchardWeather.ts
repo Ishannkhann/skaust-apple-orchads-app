@@ -4,7 +4,7 @@ import {
   OPENWEATHER_API_KEY,
   isWeatherKeyConfigured,
   MOCK_HOURLY,
-  MOCK_DAILY_16_DAYS,
+  getMockDailyForecast,
 } from "@/constants/weather";
 import type { WeatherData } from "@/types/weather";
 
@@ -39,7 +39,7 @@ export function useOrchardWeather(
   const [resolvedCity, setResolvedCity] = useState<string>(location || "Nishat");
   const [weatherData, setWeatherData] = useState<WeatherData>({
     hourly: MOCK_HOURLY,
-    daily: MOCK_DAILY_16_DAYS,
+    daily: getMockDailyForecast(),
   });
 
   useEffect(() => {
@@ -212,10 +212,11 @@ export function useOrchardWeather(
             };
           });
 
-          // Extrapolate remaining days to complete 16 full slots
+          // Extrapolate remaining days to complete 16 full slots (using dynamic mock data)
+          const dynamicMock = getMockDailyForecast();
           const finalDailyList = [...mappedDaily];
           for (let i = finalDailyList.length; i < 16; i++) {
-            const baseMock = MOCK_DAILY_16_DAYS[i] || MOCK_DAILY_16_DAYS[i % 16];
+            const baseMock = dynamicMock[i] || dynamicMock[i % 16];
             const dateOffset = new Date();
             dateOffset.setDate(dateOffset.getDate() + i);
             const dayStr = dateOffset.toLocaleDateString([], {
